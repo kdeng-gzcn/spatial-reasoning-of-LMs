@@ -15,37 +15,23 @@ class ConversationTemplate():
         # 1. data
         data_path = datapath
 
-        dataset = SevenScenesImageDataset(root_dir=data_path)
+        dataset = load_dataset("7 Scenes", data_root_dir=data_path)
         self.dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-        # 2. VLM
-        if VLM_id == "remyxai/SpaceLLaVA":
-            model = VLMTemplate.SpaceLLaVA()
-            model() # load cache
-
-        if VLM_id == "llava-hf/llava-v1.6-mistral-7b-hf":
-            model = VLMTemplate.LlavaNextVLM()
-            model.load_model(VLM_id) # load cache
-
-        if VLM_id == "HuggingFaceM4/idefics2-8b":
-            model = VLMTemplate.Idefics2VLM()
-            model.load_model(VLM_id)
-
-        if VLM_id == "microsoft/Phi-3.5-vision-instruct":
-            model = VLMTemplate.Phi3VLM()
-            model.load_model(VLM_id)
-
-        self.VLM = model
+        # 2.VLM
+        self.VLM_id = VLM_id
+        self.VLM = load_model("Phi 3.5")
+        self.VLM._load_weight()
 
         # 3. LLM
-        if LLM_id == "meta-llama/Meta-Llama-3-8B-Instruct":
-            model = HuggingFaceLLM(LLM_id)
-            model() # load cache
-               
-        self.LLM = model
+        self.LLM_id = LLM_id
+        self.LLM = load_model("llama")
+        self.LLM._load_weight()
 
         # 4. prompter
-        self.brain_prompt = BrainPrompt()
+        self.start_prompter = load_prompter("Begin")
+        self.LLM_prompter = load_prompter("Brain")
 
-        # 5. writer
-        self.writer = Writer(self.VLM, self.LLM)
+    def __call__(self):
+
+        raise NotImplementedError()

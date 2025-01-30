@@ -19,7 +19,9 @@ from transformers import Idefics2Processor, Idefics2ForConditionalGeneration
 
 # 0. Original Template For VLM
 class VLMTemplate:
+
     def __init__(self, name: str = None):
+
         self.Tensor2PIL = ToPILImage()
         self.model_name = name
         self.model = None
@@ -27,6 +29,7 @@ class VLMTemplate:
         self.message = None
     
     def pipeline(self, image=None, prompt: str = None):
+
         raise NotImplementedError
 
 class HuggingFaceVLM(VLMTemplate):
@@ -232,22 +235,27 @@ class Idefics2VLM(VLMTemplate):
 class Phi3VLM(VLMTemplate):
 
     def __init__(self, name: str = None):
+
         super().__init__(name=name)
         
-    def load_model(self, model_id: str = None):
+    def _load_weight(self, model_id: str = None):
         
         # 1. parse model id
-        self.model_name = model_id
+        if self.model_name == None:
+
+            assert model_id is not None, "Need a model_id"
+
+            self.model_name = model_id
 
         # 2. load model
         processor = AutoProcessor.from_pretrained(
-            model_id, 
+            self.model_name, 
             trust_remote_code=True, 
             num_crops=4
         ) 
 
         model = AutoModelForCausalLM.from_pretrained(
-            model_id, 
+            self.model_name, 
             device_map="cuda", 
             trust_remote_code=True, 
             torch_dtype="auto", # bfloat16

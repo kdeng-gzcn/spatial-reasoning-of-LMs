@@ -2,23 +2,29 @@
 class PromptTemplate():
     
     def __init__(self) -> None:
+
         pass
 
 class StartPrompt(PromptTemplate):
 
     def __init__(self) -> None:
+
         super().__init__()
 
     def __call__(self, mode="pair"):
+
         """
+
         This prompt is for task description
-        ideal format: <s> questions <\s> <t> questions <\t>
+
         """
 
         if mode == "single":
+
             prompt = r"You are tasked with understanding two viewpoints, which are source viewpoint and target viewpoint, of the same scene taken from different angles. Although you can't see these views directly, you have a friend within the scene who can provide detailed descriptions, including distances and angles related to camera. Now suppose you are chatting with your friend, formulate questions inside special token <question> <\question> for your friend about source viewpoint first to help you better understand source image."
 
         if mode == "pair":
+
             prompt = r"You are tasked with understanding the relative positioin between two viewpoints from camera, which are source image and target image, of the same scene taken from 2 different viewpoints. Although you can't see the 2 images directly, you have a friend VLM who can provide detailed descriptions of the images to you. My suggestion is to find out the main objects in each image first, and then find out the relative position of the main objects in further conversation, to judge the movement of camera from source image to target image. Note that, the task is not hard because you just need to judge if the camera is rotating leftward or rightward from source to target. Now suppose you are chatting with your friend, formulate questions for your friend. "
 
         return prompt
@@ -42,6 +48,7 @@ class EyePrompt(PromptTemplate):
 class BrainPrompt(PromptTemplate):
 
     def __init__(self) -> None:
+
         super().__init__()
     
     def answer_prompter_single(self, answer_from_VLM, source=True):
@@ -54,8 +61,11 @@ class BrainPrompt(PromptTemplate):
         return prompt
     
     def answer_prompter_pair(self, answer_from_VLM):
+
         """
+
         Combinate source and target answer for new prompt for brain.
+
         """
 
         prompt = rf'The friend said, """{answer_from_VLM}""". Please choose one among the following options as your judgement for the main movement of camera from source to target: (0) not enough confident to judge (1) leftward (2) rightward. And please give your explanation for your answer inside special token <ans> <\ans> (if you choose (0), then give your further questions inside <ques> <\ques>)'
@@ -64,10 +74,4 @@ class BrainPrompt(PromptTemplate):
 
 if __name__ == "__main__":
 
-    eye = EyePrompt()
-    prompt = eye()
-    print(prompt)
-
-    brain_prompt = BrainPrompt()
-    prompt = brain_prompt(source_response="A", target_response="B")
-    print(prompt)
+    pass

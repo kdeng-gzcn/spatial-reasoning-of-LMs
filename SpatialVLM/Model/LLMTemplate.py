@@ -13,6 +13,7 @@ class LLMTemplate:
 class HuggingFaceLLM(LLMTemplate):
 
     def __init__(self, name=None):
+
         super().__init__()
         
         self.model_name = name
@@ -26,7 +27,7 @@ class HuggingFaceLLM(LLMTemplate):
             {"role": "system", "content": "You are a warm and friendly chatbot who is always eager to help and offer kind words of support."},
         ]
         
-    def __call__(self):
+    def _load_weight(self):
         """
         load model and tokenizer from huggingface
         """

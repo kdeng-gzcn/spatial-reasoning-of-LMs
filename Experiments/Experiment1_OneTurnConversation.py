@@ -1,12 +1,12 @@
 import argparse
 import logging
-# import yaml
 
 import sys
 sys.path.append("./")
 
 # 1. import costume pipeline
-from SpatialVLM.Conversation import ConversationProcess as piepline
+# from SpatialVLM.Conversation import ConversationSingle as piepline
+from SpatialVLM.Conversation.utils import load_process
 
 # 2. define argument parser
 def parse_args():
@@ -69,21 +69,8 @@ def main(args):
     start(args=args)
 
     # 1. Conversation Algorithm Main
-    if args.mode == "single": 
-        pipeline = piepline.Conversations_Single_Image(
-            VLM_id=args.VLM, 
-            LLM_id=args.LLM, 
-            datapath=args.data_path
-            )
-        pipeline(len_conversation=1)
-    
-    if args.mode == "pair":
-        pipeline = piepline.Conversations_Pairwise_Image(
-            VLM_id=args.VLM, 
-            LLM_id=args.LLM, 
-            datapath=args.data_path
-            )
-        pipeline(len_conversation=1)
+    pipeline = load_process("pair", VLM_id=args.VLM, LLM_id=args.LLM, datapath=args.data_path)
+    pipeline(len_conversation=1)
     
 
 if __name__ == "__main__":
