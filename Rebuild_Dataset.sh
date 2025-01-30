@@ -14,10 +14,6 @@ source /bask/projects/j/jlxi8926-auto-sum/kdeng/anaconda3/etc/profile.d/conda.sh
 conda activate VLM
 
 # Test
-# /bask/projects/j/jlxi8926-auto-sum/kdeng/anaconda3/envs/VLM/bin/python /bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/SpatialVLM/utils/dataset/Rebuild_7scenes.py
+# /bask/projects/j/jlxi8926-auto-sum/kdeng/anaconda3/envs/VLM/bin/python /bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/SpatialVLM/Dataset/Rebuild_Dataset.py
 
-/bask/projects/j/jlxi8926-auto-sum/kdeng/anaconda3/envs/VLM/bin/python /bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/SpatialVLM/utils/dataset/Split_7Scenes.py
-
-# /bask/projects/j/jlxi8926-auto-sum/kdeng/anaconda3/envs/VLM/bin/python /bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/Tests/test_7Scenes_dataloader.py
-
-
+/bask/projects/j/jlxi8926-auto-sum/kdeng/anaconda3/envs/VLM/bin/python /bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/Tests/test_7Scenes_dataloader.py

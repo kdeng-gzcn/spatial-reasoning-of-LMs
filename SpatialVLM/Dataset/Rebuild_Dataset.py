@@ -281,6 +281,7 @@ global_csv_df.to_csv(global_csv_path, index=False)
 # json
 global_json_path = os.path.join(rebuild_data_dir, "global_metadata.json")
 with open(global_json_path, "w") as f:
+    
     json.dump(global_json_data, f, indent=4)
 
 # jsonlines
