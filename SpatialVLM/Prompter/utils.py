@@ -13,4 +13,4 @@ def load_prompter(prompter_type):
     if prompter_type not in prompter_mapping:
         raise NotImplementedError(f"Prompter type {prompter_type} not supported.")
 
-    return prompter_mapping[prompter_type]
+    return prompter_mapping[prompter_type]()

@@ -20,7 +20,7 @@ def load_dataset(dataset_name, data_root_dir, split=None):
     if dataset_name not in dataset_mapping:
         raise NotImplementedError(f"Dataset name {dataset_name} not supported.")
 
-    if split not in ["train", "validation", "test"]:
+    if split not in ["train", "validation", "test", None]:
         raise NotImplementedError(f"Split {split} not supported.")
 
     return dataset_mapping[dataset_name](data_root_dir=data_root_dir)

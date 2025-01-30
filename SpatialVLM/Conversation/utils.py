@@ -9,7 +9,7 @@ from SpatialVLM.Conversation import (
     Conversations_Pairwise_Image
 )
 
-def load_process(type):
+def load_process(type, VLM_id=None, LLM_id=None, datapath=None):
 
     process_mapping = {
         "single": Conversations_Single_Image,
