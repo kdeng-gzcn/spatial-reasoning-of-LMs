@@ -6,12 +6,11 @@ import shutil
 import json
 import jsonlines
 import tqdm
+import time
 
 import os
 
 orgin_data_dir = "./data/RGBD_7_Scenes/"
-
-csv = pd.DataFrame()
 
 frame_threshold = [25, 150]
 
@@ -19,7 +18,7 @@ num_framepairs_each_dimension = 200
 
 total_pairs = num_framepairs_each_dimension * 6
 
-rebuild_data_dir = f"./data/Rebuild_7_Scenes_{total_pairs}/"
+rebuild_data_dir = f"./data/Rebuild_7_Scenes_{total_pairs}_{int(time.time())}/"
 
 num_framepairs_count = {
     "tx": 0,
@@ -31,13 +30,13 @@ num_framepairs_count = {
 }
 
 threshold_relative_pose = {
-            "tx": [0.2, 0.5],
-            "ty": [0.1, 0.3],
-            "tz": [0.2, 0.5],
-            "theta": [5, 15],
-            "phi": [5, 15],
-            "psi": [5, 15],
-        }
+    "tx": [0.15, 0.4],
+    "ty": [0.1, 0.3],
+    "tz": [0.15, 0.4],
+    "theta": [3, 10],
+    "phi": [5, 15],
+    "psi": [3, 10],
+}
 
 global_csv_data = []
 global_json_data = []
@@ -242,6 +241,7 @@ while not all_dimensions_complete():
             }
 
             info["significance_text"] = info[f"{df}_text"]
+            info["significance_value"] = np.abs(info[f"{df}"])
 
             """
             
