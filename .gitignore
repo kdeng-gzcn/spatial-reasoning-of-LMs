@@ -1,3 +1,4 @@
 data/
 archive/
 cache/
+__pycache__
