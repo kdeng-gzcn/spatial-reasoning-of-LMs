@@ -9,7 +9,17 @@ from SpatialVLM.Conversation import (
     Conversations_Pairwise_Image
 )
 
-def load_process(type, VLM_id=None, LLM_id=None, datapath=None):
+def load_process(type, **kwargs):
+    
+    """
+    
+    kwargs:
+        VLM_id
+        LLM_id
+        datapath
+        subset
+    
+    """
 
     process_mapping = {
         "single": Conversations_Single_Image,
@@ -19,5 +29,5 @@ def load_process(type, VLM_id=None, LLM_id=None, datapath=None):
     if type not in process_mapping:
         raise NotImplementedError(f"Type of process {type} not supported.")
 
-    return process_mapping[type]
+    return process_mapping[type](**kwargs)
 

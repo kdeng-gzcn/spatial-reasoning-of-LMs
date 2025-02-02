@@ -4,23 +4,20 @@ import logging
 import sys
 sys.path.append("./")
 
-# 1. import costume pipeline
-# from SpatialVLM.Conversation import ConversationSingle as piepline
 from SpatialVLM.Conversation.utils import load_process
 
-# 2. define argument parser
 def parse_args():
 
     parser = argparse.ArgumentParser(
         description="Run Conversation Experiment pipeline"
         )
     
-    parser.add_argument(
-        "--info", 
-        type=str, 
-        help="test arg", 
-        required=False
-        )
+    # parser.add_argument(
+    #     "--info", 
+    #     type=str, 
+    #     help="useless, removed", 
+    #     required=False,
+    #     )
     
     parser.add_argument(
         "--data_path", 
@@ -29,6 +26,15 @@ def parse_args():
         help="path for data stream", 
         required=False
         )
+    
+    parser.add_argument(
+        "--subset", 
+        type=str, 
+        default="phi", 
+        help="path for data stream", 
+        required=False
+        )
+
     parser.add_argument(
         "--VLM", 
         type=str, 
@@ -51,32 +57,42 @@ def parse_args():
         required=False
         )
     
+    parser.add_argument(
+        "--result_path", 
+        type=str, 
+        default="./Result/Pair Conversation Experiment/", 
+        help="path for result", 
+        required=False
+        )
+    
     return parser.parse_args()
 
-# 3. define usefule function for main()
-def start(args):
-
-    logging.basicConfig(level=logging.INFO)
-    
-    logging.info(args.info)
-    logging.info("Starting the experiment pipeline...")
-
-
-# 4. main function
 def main(args):
 
     # 0. make sure arg parser and logging work
-    start(args=args)
+    logging.basicConfig(level=logging.INFO)
+
+    logging.info(f"Mode: {args.mode}")
+    logging.info(f"LLM: {args.LLM}")
+    logging.info(f"VLM: {args.VLM}")
+    logging.info(f"DataPath: {args.data_path}")
+    logging.info(f"Subset: {args.subset}")
+    logging.info(f"ResultPath: {args.result_path}")
 
     # 1. Conversation Algorithm Main
-    pipeline = load_process("pair", VLM_id=args.VLM, LLM_id=args.LLM, datapath=args.data_path)
-    pipeline(len_conversation=1)
+    kwargs = {
+        "VLM_id": args.VLM,
+        "LLM_id": args.LLM,
+        "datapath": args.data_path,
+        "subset": args.subset,
+    }
+
+    pipeline = load_process(type="pair", **kwargs)
+    pipeline(len_conversation=1, result_dir=args.result_path)
     
 
 if __name__ == "__main__":
-    
-    # 0. get args from bash
+
     args = parse_args()
     
-    # 1. use args to run custom pipeline
     main(args)

@@ -4,11 +4,13 @@ import os
 import json
 import time
 
+from tqdm import tqdm
+
 class Conversations_Pairwise_Image(ConversationTemplate):
 
-    def __init__(self, VLM_id=None, LLM_id=None, datapath=None):
+    def __init__(self, **kwargs):
 
-        super().__init__(VLM_id=VLM_id, LLM_id=LLM_id, datapath=datapath)
+        super().__init__(**kwargs)
     
     def __call__(self, len_conversation=1, result_dir=None):
 
@@ -19,8 +21,7 @@ class Conversations_Pairwise_Image(ConversationTemplate):
         LLM_prompter = self.LLM_prompter # prompter to help brain
         Task_prompter = self.start_prompter
 
-        if result_dir is not None:
-            result_dir = result_dir
+        if result_dir:
             os.makedirs(result_dir, exist_ok=True)
         else:
             result_dir = "./Result/Pair Conversation Experiment/"
@@ -31,22 +32,28 @@ class Conversations_Pairwise_Image(ConversationTemplate):
         result_json = [
             {
                 "mode": "pair",
+                "subset": self.subset,
                 "VLM": VLM.model_name,
                 "LLM": LLM.model_name,
             },
         ]
 
-        for batch in dataloader:
-            # parse batch
-            source_images, target_images, metadatas = batch
+        dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
 
-            if data_count >= 5: # for small scale test
-                break
-            
+        # for batch in dataloader:
+        for batch in dataloader_tqdm:
+
+            if data_count >= 60: # for small scale test
+                    break
+                
             data_count += 1
 
-            # take 1 sample from 1 batch (edit dataloader later)
-            for (source_image, target_image, metadata) in zip(source_images, target_images, metadatas):
+            # take 1 sample from 1 batch
+            for item in batch:
+
+                source_image = item["source_image"]
+                target_image = item["target_image"]
+                metadata = item["metadata"]
 
                 # NOW WE GET A PAIR OF IMAGES and corresponding info
                 # 0. Alg hyper params
@@ -67,6 +74,7 @@ class Conversations_Pairwise_Image(ConversationTemplate):
                         "pair": metadata["pair"],
                         "significant dof": metadata["significance"],
                         "label": metadata["significance_text"],
+                        "significant value": metadata["significance_value"],
                     },
                     {
                         "level": "round",
@@ -132,22 +140,13 @@ class Conversations_Pairwise_Image(ConversationTemplate):
                         },
                     )
 
-                # end of a conversation
-
-                # print("history:", LLM.full_history)
-                # print("messages:", LLM.messages)
-
-                # 3. evaluation PRINT!!!!!!!!!!!!!!!!!!!!!!!!!!
-                label_true = True
+                # 3. evaluation with Metric.py
         
-        # end of one pair
-        result_json.append(conversation_info)
+            # end of 1 item
+            result_json.append(conversation_info)
 
-        json_path = os.path.join(result_dir, f"{time.time()}.json")
-        os.makedirs(json_path)
+        json_path = os.path.join(result_dir, f"{int(time.time())}.json")
 
         with open(json_path, "w") as f:
 
             json.dump(result_json, f, indent=4)
-
-
