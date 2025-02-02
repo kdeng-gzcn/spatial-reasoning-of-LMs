@@ -1,9 +1,12 @@
-
 class PromptTemplate():
     
     def __init__(self) -> None:
 
         pass
+
+    def __call__(self) -> None:
+
+        raise NotImplementedError()
 
 class StartPrompt(PromptTemplate):
 
