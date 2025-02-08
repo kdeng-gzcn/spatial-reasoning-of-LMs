@@ -1,13 +1,21 @@
-from SpatialVLM.Prompter import StartPrompt, BrainPrompt
+from SpatialVLM.Prompter.PrompterPair import (
+    TaskDesc_Prompter4Pair,
+    LLM_To_VLM_Prompter4Pair,
+    VLM_To_LLM_Prompter4Pair,
+)
 
 def load_prompter(prompter_type):
 
     prompter_mapping = {
-        "Begin": StartPrompt,
-        "Start": StartPrompt,
-        "Task Description": StartPrompt,
-        "Brain": BrainPrompt,
-        "LLM": BrainPrompt,
+        "Begin for pair": TaskDesc_Prompter4Pair,
+        "Start for pair": TaskDesc_Prompter4Pair,
+        "Task Description for pair": TaskDesc_Prompter4Pair,
+
+        "Brain for pair": VLM_To_LLM_Prompter4Pair,
+        "LLM for pair": VLM_To_LLM_Prompter4Pair,
+
+        "Eye for pair": LLM_To_VLM_Prompter4Pair,
+        "VLM for pair": LLM_To_VLM_Prompter4Pair,
     }
 
     if prompter_type not in prompter_mapping:
