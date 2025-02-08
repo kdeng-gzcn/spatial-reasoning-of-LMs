@@ -12,13 +12,6 @@ def parse_args():
         description="Run Conversation Experiment pipeline"
         )
     
-    # parser.add_argument(
-    #     "--info", 
-    #     type=str, 
-    #     help="useless, removed", 
-    #     required=False,
-    #     )
-    
     parser.add_argument(
         "--data_path", 
         type=str, 
@@ -85,10 +78,12 @@ def main(args):
         "LLM_id": args.LLM,
         "datapath": args.data_path,
         "subset": args.subset,
+        "result dir": args.result_path,
+        "len of conversations": 1
     }
 
     pipeline = load_process(type="pair", **kwargs)
-    pipeline(len_conversation=1, result_dir=args.result_path)
+    pipeline()
     
 
 if __name__ == "__main__":
