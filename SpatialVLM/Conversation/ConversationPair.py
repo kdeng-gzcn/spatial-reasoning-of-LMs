@@ -3,6 +3,7 @@ from .ConversationTemplate import ConversationTemplate
 import os
 import json
 import time
+import pandas as pd
 
 from tqdm import tqdm
 
@@ -12,14 +13,17 @@ class Conversations_Pairwise_Image(ConversationTemplate):
 
         super().__init__(**kwargs)
     
-    def __call__(self, len_conversation=1, result_dir=None):
+    def __call__(self):
 
-        # setting up important part
-        dataloader = self.dataloader # dataloader
-        VLM = self.VLM # eyes after loading
-        LLM = self.LLM # brain after loading
-        LLM_prompter = self.LLM_prompter # prompter to help brain
-        Task_prompter = self.start_prompter
+        dataloader = self.dataloader
+        VLM = self.VLM
+        LLM = self.LLM
+        Task_prompter = self.task_prompter
+        LLM_prompter = self.VLM2LLM_prompter
+        VLM_prompter = self.LLM2VLM_prompter
+        
+        result_dir = self.result_dir
+        len_conv = self.len_conv
 
         if result_dir:
             os.makedirs(result_dir, exist_ok=True)
@@ -27,9 +31,7 @@ class Conversations_Pairwise_Image(ConversationTemplate):
             result_dir = "./Result/Pair Conversation Experiment/"
             os.makedirs(result_dir, exist_ok=True)
 
-        data_count = 0
-
-        result_json = [
+        conversation_json = [
             {
                 "mode": "pair",
                 "subset": self.subset,
@@ -40,13 +42,15 @@ class Conversations_Pairwise_Image(ConversationTemplate):
 
         dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
 
+        # data_count = 0
+
         # for batch in dataloader:
         for batch in dataloader_tqdm:
 
-            if data_count >= 60: # for small scale test
-                    break
+            # if data_count >= 5: # for small scale test
+            #         break
                 
-            data_count += 1
+            # data_count += 1
 
             # take 1 sample from 1 batch
             for item in batch:
@@ -58,11 +62,11 @@ class Conversations_Pairwise_Image(ConversationTemplate):
                 # NOW WE GET A PAIR OF IMAGES and corresponding info
                 # 0. Alg hyper params
                 LLM.clearhistory() # for differnt pair images, clear up history in LLM
-                len_conversation = len_conversation # max length of conversation
+                # len_conversation = len_conversation
                 images = (source_image, target_image) # fit in data structure
 
                 # 1. load start prompt for task description
-                task_prompt = Task_prompter(mode="pair")
+                task_prompt = Task_prompter()
                 # 1.1 get the questions from LLM after it understand our task
                 LLM_Questions_for_Both = LLM.pipeline(task_prompt)
 
@@ -93,7 +97,7 @@ class Conversations_Pairwise_Image(ConversationTemplate):
                 ]
 
                 # 2. start conversation
-                for idx in range(len_conversation): # for loop for max length or stop condition
+                for idx in range(len_conv): # for loop for max length or stop condition
 
                     if idx:
                         # if idx > 0 and LLM is not satisfied, then extract new questions for source
@@ -110,9 +114,10 @@ class Conversations_Pairwise_Image(ConversationTemplate):
                         )
 
                     # a. get answers from VLM given questions for source from LLM
-                    LLM_Questions_for_Both = "(Note that the first image is source image and the second one is target image) " + LLM_Questions_for_Both
+                    LLM_Questions_for_Both = VLM_prompter(LLM_Questions=LLM_Questions_for_Both)
+
                     VLM_Answer_for_Both = VLM.pipeline(images, LLM_Questions_for_Both)
-                    VLM_Answer_for_Both = LLM_prompter.answer_prompter_pair(VLM_Answer_for_Both)
+                    VLM_Answer_for_Both = LLM_prompter(VLM_Answers=VLM_Answer_for_Both)
 
                     conversation_info.append(
                         {
@@ -134,19 +139,51 @@ class Conversations_Pairwise_Image(ConversationTemplate):
                             "speaker": "LLM",
                             "listener": "User or VLM",
                             "text": LLM_Answer_for_round_idx,
-                            "choice": None,
-                            "if continue conversation": None,
-                            "answer": None
                         },
                     )
 
-                # 3. evaluation with Metric.py
-        
-            # end of 1 item
-            result_json.append(conversation_info)
+                    # 3. evaluation end of 1 round
+                    self.metric(idx + 1, LLM_Answer_for_round_idx, metadata)
 
-        json_path = os.path.join(result_dir, f"{int(time.time())}.json")
+            # end of 1 pair
+            conversation_json.append(conversation_info)
+
+        # end of entire alg for all dagtaset
+        current_time = int(time.time())
+
+        result_dir = os.path.join(result_dir, f"{current_time}")
+        os.makedirs(result_dir, exist_ok=True)
+
+        # 1. conversation
+        json_path = os.path.join(result_dir, f"conversations.json")
 
         with open(json_path, "w") as f:
 
-            json.dump(result_json, f, indent=4)
+            json.dump(conversation_json, f, indent=4)
+
+        # 2. result
+        result_dict = self.metric.result_dict
+
+        json_path = os.path.join(result_dir, f"result.json")
+
+        with open(json_path, "w") as f:
+
+            json.dump(result_dict, f, indent=4)
+
+        df = pd.DataFrame(result_dict)
+        csv_path = os.path.join(result_dir, f"result.csv")
+        df.to_csv(csv_path, index=False)
+
+        # 3. summary result
+        metrics_dict = self.metric._evaluate()
+
+        scalar_metrics_dict = metrics_dict["scalar metrics"]
+        confusion_matrix = metrics_dict["confusion matrix"]
+
+        df = pd.DataFrame(scalar_metrics_dict)
+        csv_path = os.path.join(result_dir, f"result_stat.csv")
+        df.to_csv(csv_path, index=False)
+
+        cm_df = pd.DataFrame(confusion_matrix, columns=["leftward", "rightward"], index=["leftward", "rightward"])
+        csv_path = os.path.join(result_dir, f"confusion_matrix.csv")
+        cm_df.to_csv(csv_path)
