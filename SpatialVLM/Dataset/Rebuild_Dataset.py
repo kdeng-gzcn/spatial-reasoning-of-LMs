@@ -14,7 +14,7 @@ orgin_data_dir = "./data/RGBD_7_Scenes/"
 
 frame_threshold = [25, 150]
 
-num_framepairs_each_dimension = 200
+num_framepairs_each_dimension = 20
 
 total_pairs = num_framepairs_each_dimension * 6
 
@@ -210,10 +210,22 @@ while not all_dimensions_complete():
             frame1_file_path = os.path.join(seq_path, f"frame-{frame1_num:06d}.color.png")
             frame2_file_path = os.path.join(seq_path, f"frame-{frame2_num:06d}.color.png")
 
+            frame1_depth_path = os.path.join(seq_path, f"frame-{frame1_num:06d}.depth.png")
+            frame2_depth_path = os.path.join(seq_path, f"frame-{frame2_num:06d}.depth.png")
+
+            frame1_pose_path = os.path.join(seq_path, f"frame-{frame1_num:06d}.pose.txt")
+            frame2_pose_path = os.path.join(seq_path, f"frame-{frame2_num:06d}.pose.txt")
+
             try:
 
                 shutil.copy(frame1_file_path, source_path)
                 shutil.copy(frame2_file_path, target_path)
+
+                shutil.copy(frame1_depth_path, source_path)
+                shutil.copy(frame2_depth_path, target_path)
+
+                shutil.copy(frame1_pose_path, source_path)
+                shutil.copy(frame2_pose_path, target_path)
 
                 # print(f"File copied successfully from {frame1_file_path} to {source_path}")
                 # print(f"File copied successfully from {frame2_file_path} to {target_path}")

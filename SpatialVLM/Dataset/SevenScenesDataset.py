@@ -77,8 +77,8 @@ class SevenScenesImageDataset(Dataset):
         source_path = os.path.join(pair_path, "source")
         target_path = os.path.join(pair_path, "target")
 
-        source_image_files = glob.glob(os.path.join(source_path, "*.png"))
-        target_image_files = glob.glob(os.path.join(target_path, "*.png"))
+        source_image_files = glob.glob(os.path.join(source_path, "*.color.png"))
+        target_image_files = glob.glob(os.path.join(target_path, "*.color.png"))
 
         if not source_image_files or not target_image_files:
             raise FileNotFoundError(f"Missing images in {pair_path}")
