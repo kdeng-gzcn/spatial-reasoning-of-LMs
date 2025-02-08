@@ -32,8 +32,8 @@ export HF_HOME=/bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/cache/
 # /bask/projects/j/jlxi8926-auto-sum/kdeng/anaconda3/envs/VLM/bin/python /bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/Tests/test_Phi.py
 
 # python + .py + VLM Phi3 + LLM llama3 + 7Scenes Dataset Subset
-/bask/projects/j/jlxi8926-auto-sum/kdeng/anaconda3/envs/VLM/bin/python \
-    /bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/Experiments/Experiment1_OneTurnConversation.py \
+# python /bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/Experiments/Experiment1_OneTurnConversation.py \
+python Experiments/Experiment1_OneTurnConversation.py \
     --VLM "microsoft/Phi-3.5-vision-instruct" \
     --LLM "meta-llama/Meta-Llama-3-8B-Instruct" \
     --data_path "./data/Rebuild_7_Scenes_1200_1738445186" \
