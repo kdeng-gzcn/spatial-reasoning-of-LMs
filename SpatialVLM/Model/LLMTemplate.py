@@ -1,14 +1,16 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
-from transformers import pipeline
+# from transformers import pipeline
 
 class LLMTemplate:
 
     def __init__(self):
+        
         pass
         
     def __call__(self):
-        pass
+        
+        raise NotImplementedError()
         
 class HuggingFaceLLM(LLMTemplate):
 
@@ -18,13 +20,19 @@ class HuggingFaceLLM(LLMTemplate):
         
         self.model_name = name
         self.messages = [
-            {"role": "system", "content": "You are a warm and friendly chatbot who is always eager to help and offer kind words of support."},
+            {
+                "role": "system", 
+                "content": "You are a warm and friendly chatbot who is always eager to help and offer kind words of support.",
+            },
         ]
 
     def clearhistory(self):
         
         self.messages = [
-            {"role": "system", "content": "You are a warm and friendly chatbot who is always eager to help and offer kind words of support."},
+            {
+                "role": "system", 
+                "content": "You are a warm and friendly chatbot who is always eager to help and offer kind words of support.",
+            },
         ]
         
     def _load_weight(self):
@@ -48,7 +56,12 @@ class HuggingFaceLLM(LLMTemplate):
     def pipeline(self, prompt: str = None):
         
         # 0. add usr content
-        self.messages.append({"role": "user", "content": prompt})
+        self.messages.append(
+            {
+                "role": "user", 
+                "content": prompt,
+            }
+        )
 
         # 1. chat template for specific model + tokenizer    
         inputs = self.tokenizer.apply_chat_template(
@@ -82,14 +95,21 @@ class HuggingFaceLLM(LLMTemplate):
         answer = self.tokenizer.decode(output_ids, skip_special_tokens=True)
 
         # 3. add chat history
-        self.messages.append({"role": "assitant", "content": answer})
+        self.messages.append(
+            {
+                "role": "assitant", 
+                "content": answer,
+            },
+        )
         
         return answer
     
 if __name__ == "__main__":
     
-    model = HuggingFaceLLM(name="meta-llama/Meta-Llama-3-8B-Instruct")
-    # load cache
-    model()
-    output = model.pipeline("Who are you?")
-    print(output)
+    # model = HuggingFaceLLM(name="meta-llama/Meta-Llama-3-8B-Instruct")
+    # # load cache
+    # model()
+    # output = model.pipeline("Who are you?")
+    # print(output)
+
+    pass

@@ -105,7 +105,8 @@ class HuggingFaceVLM(VLMTemplate):
 
 class LlavaNextVLM(VLMTemplate):
 
-    def __init__(self, name: str = None):
+    def __init__(self, name=None):
+
         super().__init__(name=name)
         
     def load_model(self, model_id: str = None):
@@ -234,17 +235,18 @@ class Idefics2VLM(VLMTemplate):
 
 class Phi3VLM(VLMTemplate):
 
-    def __init__(self, name: str = None):
+    def __init__(self, name=None):
 
         super().__init__(name=name)
+
+        self.conversation = []
         
-    def _load_weight(self, model_id: str = None):
+    def _load_weight(self, model_id=None):
         
         # 1. parse model id
         if self.model_name == None:
 
             assert model_id is not None, "Need a model_id"
-
             self.model_name = model_id
 
         # 2. load model
@@ -275,7 +277,10 @@ class Phi3VLM(VLMTemplate):
 
         # 1. built chat history
         conversation = [
-            {"role": "user", "content": prompt},
+            {
+                "role": "user", 
+                "content": prompt,
+            },
         ]
         
         # 2. apply chat template (return str)
@@ -313,6 +318,105 @@ class Phi3VLM(VLMTemplate):
             skip_special_tokens=True, 
             clean_up_tokenization_spaces=False
         )[0] 
+        
+        return answer
+    
+class Phi3VLM_History(VLMTemplate):
+
+    def __init__(self, name=None):
+
+        super().__init__(name=name)
+
+        self.conversation = []
+        
+    def _load_weight(self, model_id=None):
+        
+        # 1. parse model id
+        if self.model_name == None:
+
+            assert model_id is not None, "Need a model_id"
+            self.model_name = model_id
+
+        # 2. load model
+        processor = AutoProcessor.from_pretrained(
+            self.model_name, 
+            trust_remote_code=True, 
+            num_crops=4
+        ) 
+
+        model = AutoModelForCausalLM.from_pretrained(
+            self.model_name, 
+            device_map="cuda", 
+            trust_remote_code=True, 
+            torch_dtype="auto", # bfloat16
+            _attn_implementation='flash_attention_2'    
+        )
+        
+        # 3. return
+        self.model = model
+        self.processor = processor
+
+    def clearhistory(self):
+        
+        self.conversation = []
+        
+    def pipeline(self, images=None, prompt: str = None):
+        
+        # 0. image pre-processing
+        images = [self.Tensor2PIL(image) for image in images]
+
+        prompt = "<|image_1|>\n<|image_2|>\n" + prompt
+
+        # 1. built chat history
+        self.conversation.append(
+            {
+                "role": "user", 
+                "content": prompt,
+            },
+        )
+        
+        # 2. apply chat template (return str)
+        prompt = self.processor.tokenizer.apply_chat_template(
+            self.conversation, 
+            tokenize=False, 
+            add_generation_prompt=True
+        )
+
+        # print(prompt)
+        
+        # 3. tokenizer the chat history (return dic with tensor and mask)
+        inputs = self.processor(prompt, images, return_tensors="pt").to("cuda:0") 
+
+        generation_args = { 
+            "max_new_tokens": 1024, 
+            # "temperature": 0.0, 
+            "do_sample": False,
+        } 
+
+        generate_ids = self.model.generate(
+            **inputs, 
+            eos_token_id=self.processor.tokenizer.eos_token_id, 
+            **generation_args
+        )
+
+        # remove input tokens 
+        generate_ids = generate_ids[:, inputs['input_ids'].shape[1]:]
+
+        # print(self.processor.decode(generate_ids[0], skip_special_tokens=True))
+        
+        # 5. decode output (with history)
+        answer = self.processor.batch_decode(
+            generate_ids, 
+            skip_special_tokens=True, 
+            clean_up_tokenization_spaces=False
+        )[0] 
+
+        self.conversation.append(
+            {
+                "role": "assitant", 
+                "content": answer,
+            },
+        )
         
         return answer
 
