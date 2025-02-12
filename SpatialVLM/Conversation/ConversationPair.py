@@ -47,10 +47,10 @@ class Conversations_Pairwise_Image(ConversationTemplate):
         # for batch in dataloader:
         for batch in dataloader_tqdm:
 
-            if data_count >= 10: # for small scale test
-                    break
+            # if data_count >= 60: # for small scale test
+            #         break
                 
-            data_count += 1
+            # data_count += 1
 
             # take 1 sample from 1 batch
             for item in batch:
