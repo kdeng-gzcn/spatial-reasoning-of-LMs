@@ -14,13 +14,22 @@ orgin_data_dir = "./data/RGBD_7_Scenes/"
 
 frame_threshold = [25, 150]
 
-num_framepairs_each_dimension = 20
+num_framepairs_each_dimension = 100
 
-total_pairs = num_framepairs_each_dimension * 6
+total_pairs = num_framepairs_each_dimension * 12
 
 rebuild_data_dir = f"./data/Rebuild_7_Scenes_{total_pairs}_{int(time.time())}/"
 
-num_framepairs_count = {
+num_pos_count = {
+    "tx": 0,
+    "ty": 0,
+    "tz": 0,
+    "theta": 0,
+    "phi": 0,
+    "psi": 0,
+}
+
+num_neg_count = {
     "tx": 0,
     "ty": 0,
     "tz": 0,
@@ -42,24 +51,48 @@ global_csv_data = []
 global_json_data = []
 
 def all_dimensions_complete():
-    return all(count >= num_framepairs_each_dimension for count in num_framepairs_count.values())
+
+    return all(
+        pos_count >= num_framepairs_each_dimension and neg_count >= num_framepairs_each_dimension
+        for pos_count, neg_count in zip(num_pos_count.values(), num_neg_count.values())
+    )
 
 # Initialize a total progress bar
 progress_bar = tqdm.tqdm(total=total_pairs, desc="Total Progress", unit="pair")
-bar_tx = tqdm.tqdm(total=num_framepairs_each_dimension, desc="tx", unit="pair")
-bar_ty = tqdm.tqdm(total=num_framepairs_each_dimension, desc="ty", unit="pair")
-bar_tz = tqdm.tqdm(total=num_framepairs_each_dimension, desc="tz", unit="pair")
-bar_theta = tqdm.tqdm(total=num_framepairs_each_dimension, desc="theta", unit="pair")
-bar_phi = tqdm.tqdm(total=num_framepairs_each_dimension, desc="phi", unit="pair")
-bar_psi = tqdm.tqdm(total=num_framepairs_each_dimension, desc="psi", unit="pair")
 
+# Initialize progress bars for each dimension (positive and negative)
+bar_tx_pos = tqdm.tqdm(total=num_framepairs_each_dimension, desc="tx (pos)", unit="pair")
+bar_tx_neg = tqdm.tqdm(total=num_framepairs_each_dimension, desc="tx (neg)", unit="pair")
+
+bar_ty_pos = tqdm.tqdm(total=num_framepairs_each_dimension, desc="ty (pos)", unit="pair")
+bar_ty_neg = tqdm.tqdm(total=num_framepairs_each_dimension, desc="ty (neg)", unit="pair")
+
+bar_tz_pos = tqdm.tqdm(total=num_framepairs_each_dimension, desc="tz (pos)", unit="pair")
+bar_tz_neg = tqdm.tqdm(total=num_framepairs_each_dimension, desc="tz (neg)", unit="pair")
+
+bar_theta_pos = tqdm.tqdm(total=num_framepairs_each_dimension, desc="theta (pos)", unit="pair")
+bar_theta_neg = tqdm.tqdm(total=num_framepairs_each_dimension, desc="theta (neg)", unit="pair")
+
+bar_phi_pos = tqdm.tqdm(total=num_framepairs_each_dimension, desc="phi (pos)", unit="pair")
+bar_phi_neg = tqdm.tqdm(total=num_framepairs_each_dimension, desc="phi (neg)", unit="pair")
+
+bar_psi_pos = tqdm.tqdm(total=num_framepairs_each_dimension, desc="psi (pos)", unit="pair")
+bar_psi_neg = tqdm.tqdm(total=num_framepairs_each_dimension, desc="psi (neg)", unit="pair")
+
+# Create a dictionary to store the positive and negative progress bars
 bar_dict = {
-    "tx": bar_tx,
-    "ty": bar_ty,
-    "tz": bar_tz,
-    "theta": bar_theta,
-    "phi": bar_phi,
-    "psi": bar_psi,
+    "tx_pos": bar_tx_pos,
+    "tx_neg": bar_tx_neg,
+    "ty_pos": bar_ty_pos,
+    "ty_neg": bar_ty_neg,
+    "tz_pos": bar_tz_pos,
+    "tz_neg": bar_tz_neg,
+    "theta_pos": bar_theta_pos,
+    "theta_neg": bar_theta_neg,
+    "phi_pos": bar_phi_pos,
+    "phi_neg": bar_phi_neg,
+    "psi_pos": bar_psi_pos,
+    "psi_neg": bar_psi_neg,
 }
 
 # Iterate through each scene folder
@@ -169,23 +202,28 @@ while not all_dimensions_complete():
 
             if not valid_pair:
 
-                # print(f"No valid significant pose pair found in {seq_path}")
-
-                continue
-
-            # Check if the significant dimension has already reached the required number of pairs
-            if num_framepairs_count[df] >= num_framepairs_each_dimension:
-
                 continue
 
             # If we reach here, it means we have a valid pair for a dimension that hasn't reached 500 yet
-            num_framepairs_count[df] += 1
+            if relative_pose[df] > 0:
 
-            # Update the total progress bar
-            progress_bar.update(1)
+                if num_pos_count[df] >= num_framepairs_each_dimension:
 
-            # Update the specific df bar
-            bar_dict[df].update(1)
+                    continue
+                
+                num_pos_count[df] += 1
+                progress_bar.update(1)
+                bar_dict[f"{df}_pos"].update(1)
+                
+            else: 
+
+                if num_neg_count[df] >= num_framepairs_each_dimension:
+
+                    continue
+
+                num_neg_count[df] += 1
+                progress_bar.update(1)
+                bar_dict[f"{df}_neg"].update(1)
 
             """
             
