@@ -89,15 +89,18 @@ class Stat012:
 
     def _calculate_metrics(self):
 
-        # First, calculate the percentage of 0s (for LLM selection)
-        total_samples = len(self.data)
-        count_zero = len(self.data[self.data["pred option"] == 0])
+        max_round = self.data["round idx"].max()
+
+        stat = {}
+
+        summary = self.data.loc[self.data.groupby(['scene', 'seq', 'pair'])['round idx'].idxmax()]
+
+        total_samples = len(summary)
+        count_zero = len(summary[summary["pred option"] == 0])
         zero_percentage = count_zero / total_samples * 100
 
-        # Filter out rows where "pred option" is 0
-        filtered_data = self.data[self.data["pred option"] != 0]
+        filtered_data = summary[summary["pred option"] != 0]
 
-        # Now calculate the metrics for the binary classification (leftward vs rightward)
         y_true = filtered_data["label text"]
         y_pred = filtered_data["pred text"]
 
@@ -111,7 +114,7 @@ class Stat012:
 
         # Return the metrics as a dictionary
         scalar_metrics = {
-            "info": ["this is about phi (left, right), only 1 round experiment"],
+            # "info": ["phi (left, right), 1 round experiment"],
             "length of dataset": [total_samples],
             "not finished percentage": [zero_percentage],
             "accuracy": [accuracy],
@@ -125,7 +128,48 @@ class Stat012:
             "confusion matrix": cm
         }
 
-        return metrics
+        stat[f"summary stat"] = metrics
+
+        for round in range(1, max_round+1):
+
+            round_stat = self.data[self.data["round idx"] == round]
+
+            total_samples = len(round_stat)
+            count_zero = len(round_stat[round_stat["pred option"] == 0])
+            zero_percentage = count_zero / total_samples * 100
+
+            filtered_data = round_stat[round_stat["pred option"] != 0]
+
+            y_true = filtered_data["label text"]
+            y_pred = filtered_data["pred text"]
+
+            accuracy = accuracy_score(y_true, y_pred)
+            precision = precision_score(y_true, y_pred, pos_label="leftward")
+            recall = recall_score(y_true, y_pred, pos_label="leftward")
+            f1 = f1_score(y_true, y_pred, pos_label="leftward")
+
+            # Confusion Matrix
+            cm = confusion_matrix(y_true, y_pred, labels=["leftward", "rightward"])
+
+            # Return the metrics as a dictionary
+            scalar_metrics = {
+                # "info": ["phi (left, right), 1 round experiment"],
+                "length of dataset": [total_samples],
+                "not finished percentage": [zero_percentage],
+                "accuracy": [accuracy],
+                "precision": [precision],
+                "recall": [recall],
+                "f1_score": [f1],
+            }
+
+            metrics = {
+                "scalar metrics": scalar_metrics,
+                "confusion matrix": cm
+            }
+
+            stat[f"{round} round stat"] = metrics
+
+        return stat
 
 if __name__ == "__main__":
 

@@ -42,15 +42,15 @@ class Conversations_Pairwise_Image(ConversationTemplate):
 
         dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
 
-        # data_count = 0
+        data_count = 0
 
         # for batch in dataloader:
         for batch in dataloader_tqdm:
 
-            # if data_count >= 5: # for small scale test
-            #         break
+            if data_count >= 10: # for small scale test
+                    break
                 
-            # data_count += 1
+            data_count += 1
 
             # take 1 sample from 1 batch
             for item in batch:
@@ -100,8 +100,12 @@ class Conversations_Pairwise_Image(ConversationTemplate):
                 for idx in range(len_conv): # for loop for max length or stop condition
 
                     if idx:
-                        # if idx > 0 and LLM is not satisfied, then extract new questions for source
-                        LLM_Questions_for_Both = LLM_Answer_for_round_idx
+
+                        if self.metric.ans != 0:  # Check if ans is not 0, then break the loop
+
+                            break
+
+                        LLM_Questions_for_Both = self.metric.rsn + self.metric.ques
 
                         conversation_info.append(
                             {
@@ -175,15 +179,47 @@ class Conversations_Pairwise_Image(ConversationTemplate):
         df.to_csv(csv_path, index=False)
 
         # 3. summary result
-        metrics_dict = self.metric._evaluate()
+        stat_dicts = self.metric._evaluate()
 
-        scalar_metrics_dict = metrics_dict["scalar metrics"]
-        confusion_matrix = metrics_dict["confusion matrix"]
+        summary_stat =  stat_dicts["summary stat"]
+
+        scalar_metrics_dict = summary_stat["scalar metrics"]
+        confusion_matrix = summary_stat["confusion matrix"]
+
+        scalar_metrics_dict = {
+            "mode": "pair",
+            "subset": self.subset,
+            "VLM": VLM.model_name,
+            "LLM": LLM.model_name,
+            **scalar_metrics_dict,
+        }
+
+        stat_dir = os.path.join(result_dir, "stat")
+        os.makedirs(stat_dir, exist_ok=True)
 
         df = pd.DataFrame(scalar_metrics_dict)
-        csv_path = os.path.join(result_dir, f"result_stat.csv")
+        csv_path = os.path.join(stat_dir, f"summary_stat.csv")
         df.to_csv(csv_path, index=False)
 
         cm_df = pd.DataFrame(confusion_matrix, columns=["leftward", "rightward"], index=["leftward", "rightward"])
-        csv_path = os.path.join(result_dir, f"confusion_matrix.csv")
+        csv_path = os.path.join(stat_dir, f"summary_confusion_matrix.csv")
         cm_df.to_csv(csv_path)
+
+        for round in range(1, len(stat_dicts)):
+            
+            stat_dict = stat_dicts[f"{round} round stat"]
+
+            scalar_metrics_dict = stat_dict["scalar metrics"]
+            confusion_matrix = stat_dict["confusion matrix"]
+
+            scalar_metrics_dict = {
+                **scalar_metrics_dict,
+            }
+
+            df = pd.DataFrame(scalar_metrics_dict)
+            csv_path = os.path.join(stat_dir, f"round{round}_stat.csv")
+            df.to_csv(csv_path, index=False)
+
+            cm_df = pd.DataFrame(confusion_matrix, columns=["leftward", "rightward"], index=["leftward", "rightward"])
+            csv_path = os.path.join(stat_dir, f"round{round}_confusion_matrix.csv")
+            cm_df.to_csv(csv_path)
