@@ -1,0 +1,2 @@
+info,length of dataset,not finished percentage,accuracy,precision,recall,f1_score
+"this is about phi (left, right), only 1 round experiment",197,80.20304568527918,0.5384615384615384,0.6538461538461539,0.6538461538461539,0.6538461538461539
