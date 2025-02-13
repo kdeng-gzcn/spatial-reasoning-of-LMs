@@ -4,18 +4,18 @@ import logging
 import sys
 sys.path.append("./")
 
-from SpatialVLM.Conversation.utils import load_process
+from SpatialVLM.Individual.utils import load_process
 
 def parse_args():
 
     parser = argparse.ArgumentParser(
-        description="Run Conversation Experiment pipeline"
+        description="Run Baseline Experiment pipeline"
         )
     
     parser.add_argument(
         "--data_path", 
         type=str, 
-        default="./data/images_conversation", 
+        default="./data/Rebuild_7_Scenes_1200_1738445186", 
         help="path for data stream", 
         required=False
         )
@@ -31,29 +31,14 @@ def parse_args():
     parser.add_argument(
         "--VLM", 
         type=str, 
-        default="llava-hf/llava-v1.6-mistral-7b-hf", 
-        required=False
-        )
-    
-    parser.add_argument(
-        "--LLM", 
-        type=str, 
-        default="meta-llama/Meta-Llama-3-8B-Instruct", 
-        required=False
-        )
-    
-    parser.add_argument(
-        "--mode", 
-        type=str, 
-        default="single", 
-        choices=["single", "pair"], 
+        default="???", 
         required=False
         )
     
     parser.add_argument(
         "--result_path", 
         type=str, 
-        default="./Result/Pair Conversation Experiment/", 
+        default="./Result/Individual VLM Experiment/", 
         help="path for result", 
         required=False
         )
@@ -65,8 +50,6 @@ def main(args):
     # 0. make sure arg parser and logging work
     logging.basicConfig(level=logging.INFO)
 
-    logging.info(f"Mode: {args.mode}")
-    logging.info(f"LLM: {args.LLM}")
     logging.info(f"VLM: {args.VLM}")
     logging.info(f"DataPath: {args.data_path}")
     logging.info(f"Subset: {args.subset}")
@@ -75,17 +58,14 @@ def main(args):
     # 1. Conversation Algorithm Main
     kwargs = {
         "VLM_id": args.VLM,
-        "LLM_id": args.LLM,
         "datapath": args.data_path,
         "subset": args.subset,
         "result dir": args.result_path,
-        "len of conversations": 1
     }
 
-    pipeline = load_process(type="pair", **kwargs)
+    pipeline = load_process(**kwargs)
     pipeline()
     
-
 if __name__ == "__main__":
 
     args = parse_args()

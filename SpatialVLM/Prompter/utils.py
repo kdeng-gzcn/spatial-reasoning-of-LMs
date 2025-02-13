@@ -4,6 +4,10 @@ from SpatialVLM.Prompter.PrompterPair import (
     VLM_To_LLM_Prompter4Pair,
 )
 
+from SpatialVLM.Prompter.PrompterBaseline import (
+        TaskDesc_Prompter4Baseline,
+)
+
 def load_prompter(prompter_type):
 
     prompter_mapping = {
@@ -16,6 +20,8 @@ def load_prompter(prompter_type):
 
         "Eye for pair": LLM_To_VLM_Prompter4Pair,
         "VLM for pair": LLM_To_VLM_Prompter4Pair,
+
+        "Task Description for Baseline": TaskDesc_Prompter4Baseline,
     }
 
     if prompter_type not in prompter_mapping:
