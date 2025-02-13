@@ -11,7 +11,6 @@ def load_model(model_name):
     model_mapping = {
         "llama": HuggingFaceLLM(name="meta-llama/Meta-Llama-3-8B-Instruct"),
         "Phi 3.5": Phi3VLM(name="microsoft/Phi-3.5-vision-instruct"),
-        # "llavaNext": LlavaNextVLM(name=""),
     }
 
     if model_name not in model_mapping:

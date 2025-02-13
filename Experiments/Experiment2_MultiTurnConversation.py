@@ -79,7 +79,7 @@ def main(args):
         "datapath": args.data_path,
         "subset": args.subset,
         "result dir": args.result_path,
-        "len of conversations": 8
+        "len of conversations": 10
     }
 
     pipeline = load_process(type="pair", **kwargs)

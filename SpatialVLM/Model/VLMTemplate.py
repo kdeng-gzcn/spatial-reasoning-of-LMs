@@ -247,6 +247,7 @@ class Phi3VLM(VLMTemplate):
         if self.model_name == None:
 
             assert model_id is not None, "Need a model_id"
+            
             self.model_name = model_id
 
         # 2. load model
