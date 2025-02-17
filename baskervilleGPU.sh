@@ -1,1 +1,0 @@
-srun --account jlxi8926-auto-sum --qos epsrc --gpus 1 --time 4:00:00 --export=USER,HOME,PATH,TERM --pty /bin/bash
