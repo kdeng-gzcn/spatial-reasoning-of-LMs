@@ -1,3 +1,7 @@
+import random
+import numpy as np
+import torch
+
 # load prompter
 from SpatialVLM.Prompter.utils import load_prompter # eyeprompt in dataloader
 # load dataset
@@ -12,6 +16,15 @@ class IndividualTemplate():
 
     def __init__(self, **kwargs):
 
+        seed = 42
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
+        np.random.seed(seed)
+        random.seed(seed)
+
+        # Gloabl Config: multi-dict
         self.VLM_id = kwargs.get("VLM_id", None)
         data_path = kwargs.get("datapath", None)
         self.subset = kwargs.get("subset", None)
@@ -29,7 +42,7 @@ class IndividualTemplate():
         self.task_prompter = load_prompter("Task Description for Baseline")
 
         # 5. metric
-        self.metric = load_metric("Baseline Metric")
+        self.metric = load_metric("Baseline Metric 0123")
 
     def __call__(self):
 

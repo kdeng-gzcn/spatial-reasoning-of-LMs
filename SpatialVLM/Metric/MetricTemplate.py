@@ -1,21 +1,6 @@
-import re
-
 class MetricTemplate:
 
     def __init__(self, **kwargs):
-
-        # Global
-
-        mapping_dict = kwargs.get(
-            "mapping", 
-            {
-                0: "Next Round",
-                1: "leftward",
-                2: "rightward",
-            },
-        )
-
-        self.option_map = mapping_dict
 
         self.result_dict = []
    

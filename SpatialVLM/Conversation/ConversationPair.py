@@ -25,13 +25,7 @@ class Conversations_Pairwise_Image(ConversationTemplate):
         result_dir = self.result_dir
         len_conv = self.len_conv
 
-        if result_dir:
-            os.makedirs(result_dir, exist_ok=True)
-        else:
-            result_dir = "./Result/Pair Conversation Experiment/"
-            os.makedirs(result_dir, exist_ok=True)
-
-        conversation_json = [
+        history_dict = [
             {
                 "mode": "pair",
                 "subset": self.subset,
@@ -150,7 +144,13 @@ class Conversations_Pairwise_Image(ConversationTemplate):
                     self.metric(idx + 1, LLM_Answer_for_round_idx, metadata)
 
             # end of 1 pair
-            conversation_json.append(conversation_info)
+            history_dict.append(conversation_info)
+
+        """
+        
+        all data done, collect the stat
+        
+        """
 
         # end of entire alg for all dagtaset
         current_time = int(time.time())
@@ -163,7 +163,7 @@ class Conversations_Pairwise_Image(ConversationTemplate):
 
         with open(json_path, "w") as f:
 
-            json.dump(conversation_json, f, indent=4)
+            json.dump(history_dict, f, indent=4)
 
         # 2. result
         result_dict = self.metric.result_dict
