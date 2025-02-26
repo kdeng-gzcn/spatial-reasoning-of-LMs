@@ -1,0 +1,2 @@
+subset,VLM,length of dataset,unable to answer percentage,accuracy,precision,recall,f1_score
+phi,microsoft/Phi-3.5-vision-instruct,197,1.5228426395939088,0.5670103092783505,0.7532467532467533,0.4715447154471545,0.58
