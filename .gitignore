@@ -1,6 +1,7 @@
 data/
 archive/
 cache/
+benchmark/
 __pycache__
 Server Bash.md
 baskervilleGPU.sh
