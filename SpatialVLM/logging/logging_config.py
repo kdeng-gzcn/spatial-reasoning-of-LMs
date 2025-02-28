@@ -6,7 +6,7 @@ from typing import Optional
 from SpatialVLM.logging.color_formatter import ColoredFormatter
 
 
-def setup_logging(default_path: str = 'src/utils/logging/logging_config.json', default_level: int = logging.INFO) -> None:
+def setup_logging(default_path: str = 'SpatialVLM/logging/logging_config.json', default_level: int = logging.INFO) -> None:
     """
     Setup logging configuration.
 
