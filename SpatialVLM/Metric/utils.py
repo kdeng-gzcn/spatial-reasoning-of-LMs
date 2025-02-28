@@ -1,14 +1,17 @@
 from SpatialVLM.Metric import (
     Metric012,
     Metric012Baseline,
-    Metric0123Baseline
+    Metric0123Baseline,
+    Metric0123Conv,
 )
 
 def load_metric(metric_type, **kwargs):
 
     metric_mapping = {
         "012": Metric012,
-        "Baseline Metric": Metric012Baseline,
+        "Conv Metric 0123": Metric0123Conv,
+        
+        "Baseline Metric 012": Metric012Baseline,
         "Baseline Metric 0123": Metric0123Baseline
     }
 

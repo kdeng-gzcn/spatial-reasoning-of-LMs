@@ -29,10 +29,8 @@ class Metric012Baseline(MetricTemplate):
 
         self.ans, self.rsn, self.ques = self._extract_info(self.conclusion)
 
-        if self.ans is None: # avoid
-
-            print("Answer Option Not Extracted")
-
+        if self.ans is None:
+            print("Answer Option Not Extracted, Random Selection")
             self.ans = 0
 
         self.result_one_round = {
@@ -66,10 +64,10 @@ class Metric012Baseline(MetricTemplate):
 
         return results
 
-# Class to calculate evaluation metrics for the `012` classification task
+
 class Stat012:
 
-    def __init__(self, result_dict, option_map):
+    def __init__(self, result_dict):
         
         self.data = pd.DataFrame(result_dict)
 
@@ -115,6 +113,7 @@ class Stat012:
 
         return stat
     
+
 class Metric0123Baseline(MetricTemplate):
 
     def __init__(self, **kwargs):
@@ -184,7 +183,7 @@ class Stat0123:
 
     def _calculate_metrics(self):
 
-        stat = {}
+        self.stat = {}
 
         total_samples = len(self.data)
         count_zero = len(self.data[self.data["pred text"] == "unable to judge"])
@@ -199,7 +198,7 @@ class Stat0123:
         accuracy = accuracy_score(y_true, y_pred)
         
         # Precision, Recall, and F1 Score (for multi-class classification)
-        precision = precision_score(y_true, y_pred, average="weighted")  # Can also use 'macro' depending on your needs
+        precision = precision_score(y_true, y_pred, average="weighted")
         recall = recall_score(y_true, y_pred, average="weighted")
         f1 = f1_score(y_true, y_pred, average="weighted")
 
@@ -223,7 +222,6 @@ class Stat0123:
             "confusion matrix": cm_df
         }
 
-        stat = {}
-        stat[f"summary stat"] = metrics
+        self.stat[f"summary stat"] = metrics
 
-        return stat
+        return self.stat
