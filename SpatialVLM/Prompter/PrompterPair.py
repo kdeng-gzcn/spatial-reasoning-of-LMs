@@ -1,3 +1,5 @@
+import numpy as np
+
 from SpatialVLM.Prompter.PrompterTemplate import PromptTemplate
 
 class TaskDesc_Prompter4Pair(PromptTemplate):
@@ -34,7 +36,22 @@ class VLM_To_LLM_Prompter4Pair(PromptTemplate):
     
     def __call__(self, VLM_Answers):
 
-        prompt = f"""Your friend, the Vision Language Model (VLM), has provided the following information about the images. He said, "{VLM_Answers}" Based on this, please choose one of the following options to determine the main camera movement from the source image to the target image: (0) Not confident enough to judge; (1) Leftward rotation; (2) Rightward rotation. Provide your answer inside the special token <ans></ans>, and explain your reasoning inside the tokens <rsn></rsn>. You may only answer with (1) or (2) if you are very confident. If you choose option (0), you may ask additional questions to VLM inside the special tokens <ques></ques>. Remember: 1. The camera movement is limited to a leftward or rightward rotation; 2. Your judgment should be based on the positions and movements of objects in the images as described by the VLM; 3. If the information provided by the VLM is insufficient, you can ask for more details by selecting option (0). """
+        option_map = {
+            0: "ask more questions",
+            1: "leftward rotation",
+            2: "rightward rotation",
+            3: "no movement",
+        }
+
+        option_values = list(option_map.values())
+        np.random.shuffle(option_values)
+        self.option_map = {i: option_values[i] for i in range(len(option_values))}
+
+        # prompt = f"""Your friend, the Vision Language Model (VLM), has provided the following information about the images. He said, "{VLM_Answers}" Based on this, please choose one of the following options to determine the main camera movement from the source image to the target image: (0) {self.option_map[0]}; (1) {self.option_map[1]}; (2) {self.option_map[2]}; (3) {self.option_map[3]}. Provide your answer inside the special tokens <ans></ans>, e.g. <ans>0</ans>, and explain your reasoning inside the special tokens <rsn></rsn>, e.g. <rsn>My reason is...</rsn>. If you choose the option that asks more questions, you may ask additional questions to VLM inside the special tokens <ques></ques>, e.g. <ques>My questions are...</ques>. Note that: 1. The actual camera movement is limited to a leftward or rightward rotation; 2. Your judgment should be based on the positions and movements of objects in the images as described by the VLM. """
+
+        prompt = f"""Your friend, the Vision Language Model (VLM), has provided the following information about the images. He said, "{VLM_Answers}" Based on this, please choose one of the following options to determine the main camera movement from the source image to the target image: (0) {self.option_map[0]}; (1) {self.option_map[1]}; (2) {self.option_map[2]}; (3) {self.option_map[3]}. Provide your answer inside the special tokens <ans></ans>, e.g. <ans>0</ans>, and explain your reasoning inside the special tokens <rsn></rsn>, e.g. <rsn>My reason is...</rsn>. If you choose the option that asks more questions, you may ask additional questions to VLM inside the special tokens <ques></ques>, e.g. <ques>My questions are...</ques>. Note that your judgment should be based on the positions and movements of objects in the images as described by the VLM. """
+
+        self.option_map = {k: v.replace("leftward rotation", "leftward").replace("rightward rotation", "rightward") for k, v in self.option_map.items()}
 
         return prompt
 
