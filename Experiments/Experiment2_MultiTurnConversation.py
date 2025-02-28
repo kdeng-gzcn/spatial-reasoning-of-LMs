@@ -4,6 +4,7 @@ import logging
 import sys
 sys.path.append("./")
 
+from SpatialVLM.logging.logging_config import setup_logging
 from SpatialVLM.Conversation.utils import load_process
 
 def parse_args():
@@ -57,31 +58,41 @@ def parse_args():
         help="path for result", 
         required=False
         )
+
+    parser.add_argument(
+        "--max_len_conv",
+        type=int,
+        default=10,
+        help="length max_len_conv conversation",
+        required=False
+    )
     
     return parser.parse_args()
 
 def main(args):
 
-    # 0. make sure arg parser and logging work
-    logging.basicConfig(level=logging.INFO)
+    # 0. Logging
+    setup_logging()
+    logger = logging.getLogger(__name__)
 
-    logging.info(f"Mode: {args.mode}")
-    logging.info(f"LLM: {args.LLM}")
-    logging.info(f"VLM: {args.VLM}")
-    logging.info(f"DataPath: {args.data_path}")
-    logging.info(f"Subset: {args.subset}")
-    logging.info(f"ResultPath: {args.result_path}")
+    logger.info(f"Mode: {args.mode}")
+    logger.info(f"LLM: {args.LLM}")
+    logger.info(f"VLM: {args.VLM}")
+    logger.info(f"DataPath: {args.data_path}")
+    logger.info(f"Subset: {args.subset}")
+    logger.info(f"ResultPath: {args.result_path}")
 
-    # 1. Conversation Algorithm Main
+    # 1. Global Config Args
     kwargs = {
         "VLM_id": args.VLM,
         "LLM_id": args.LLM,
         "datapath": args.data_path,
         "subset": args.subset,
         "result dir": args.result_path,
-        "len of conversations": 10
+        "len of conversations": args.max_len_conv
     }
 
+    # 2. Load and Run Pipeline
     pipeline = load_process(type="pair", **kwargs)
     pipeline()
 

@@ -4,6 +4,7 @@ import logging
 import sys
 sys.path.append("./")
 
+from SpatialVLM.logging.logging_config import setup_logging
 from SpatialVLM.Individual.utils import load_process
 
 def parse_args():
@@ -48,12 +49,13 @@ def parse_args():
 def main(args):
 
     # 0. make sure arg parser and logging work
-    logging.basicConfig(level=logging.INFO)
+    setup_logging()
+    logger = logging.getLogger(__name__)
 
-    logging.info(f"VLM: {args.VLM}")
-    logging.info(f"DataPath: {args.data_path}")
-    logging.info(f"Subset: {args.subset}")
-    logging.info(f"ResultPath: {args.result_path}")
+    logger.info(f"VLM: {args.VLM}")
+    logger.info(f"DataPath: {args.data_path}")
+    logger.info(f"Subset: {args.subset}")
+    logger.info(f"ResultPath: {args.result_path}")
 
     # 1. Conversation Algorithm Main
     kwargs = {
