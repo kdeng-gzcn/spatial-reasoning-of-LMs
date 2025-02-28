@@ -1,3 +1,7 @@
+import numpy as np
+import torch
+import random
+
 # load prompter
 from SpatialVLM.Prompter.utils import load_prompter # eyeprompt in dataloader
 # load dataset
@@ -11,6 +15,14 @@ from SpatialVLM.Model.utils import load_model
 class ConversationTemplate():
 
     def __init__(self, **kwargs):
+
+        seed = 42
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
+        np.random.seed(seed)
+        random.seed(seed)
 
         self.VLM_id = kwargs.get("VLM_id", None)
         self.LLM_id = kwargs.get("LLM_id", None)
@@ -37,7 +49,7 @@ class ConversationTemplate():
         self.VLM2LLM_prompter = load_prompter("Brain for pair")
 
         # 5. metric
-        self.metric = load_metric("012")
+        self.metric = load_metric("Conv Metric 0123")
 
     def __call__(self):
 
