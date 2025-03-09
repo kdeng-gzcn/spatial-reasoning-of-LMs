@@ -6,25 +6,39 @@ class TaskDesc_Prompter4Pair(PromptTemplate):
 
     def __init__(self, **kwargs):
 
-        self.direction = kwargs.get("direction", None)
+        self.if_give_example = kwargs.get("if_give_example", False)
 
         super().__init__()
 
     def __call__(self):
 
-        prompt = "You are tasked with spatial reasoning evaluation, i.e. infering the camera movement from a source image to a target image. Although you can't see the pair of images directly, you have a friend Vision Language Model (VLM) who can answer all the questions that you ask about the images. My suggestions are: 1. to find out the main objects occur in both images; 2. find out the positions of the objects inside the image, e.g. there is a box on the left side of source image, and the same box is on the right side of target image; 3. judge the movement of camera from source image to target image based on information you get. For more information: 1. you can have several turns of conversation with VLM if you like; 2. the task is not hard because the camera movement is only by one of six direction (three translations and three rotations), and here you just need to judge if the camera is rotating leftward or rightward from source to target. Now suppose you are chatting with your friend, formulate questions for your friend. "
+        prompt = "You are tasked with spatial reasoning evaluation, i.e. infering the camera movement from a source image to a target image. Although you can't see the pair of images directly, you have a friend Vision Language Model (VLM) who can answer all the questions that you ask about the images. My suggestions are: 1. to find out the main objects occur in both images; 2. find out the positions of the objects inside the image; 3. judge the movement of camera from source image to target image based on information you get. For more information: 1. you can have several turns of conversation with VLM if you like; 2. the task is not hard because the camera movement is limited to only be one of six direction (three translations and three rotations), e.g. only left or right translation/translation. Now suppose you are chatting with your friend, formulate questions for your friend. "
+
+        self.if_give_example = True
+
+        if self.if_give_example:
+            prompt += """Example: LLM: "Are there any objects that appear in both images?", VLM: "Yes, there is a chair and a table in both images.", LLM: "Where is the chair in the source image?"
+            VLM: "The chair is on the left side of the image.", LLM: "Where is the chair in the target image?", VLM: "The chair is now on the right side of the image.", LLM: "Given this information, it seems that the camera has rotated to the left, since the entire scene shifts rightward in the image plane, making objects appear to move from left to right. If the camera had no movement or rotated rightward, the chair would have either remained on the left side of the image or moved further left." """
 
         return prompt
 
 class LLM_To_VLM_Prompter4Pair(PromptTemplate):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+
+        self.if_give_example = kwargs.get("if_give_example", False)
 
         super().__init__()
 
     def __call__(self, LLM_Questions):
 
-        prompt = f"""You are a Vision Language Model (VLM) that can answer questions about images. Your friend, the Language Model (LLM), is trying to infer the camera movement from a source image to a target image. (Note that the first image you see is source image and the second one is target image) He said, "{LLM_Questions}" Please provide detailed answers to these questions based on the images you can see. Your answers should help the LLM determine whether the camera is rotating leftward or rightward from the source image to the target image. Just answer his questions, do not tell him your judgement. """
+        prompt = f"""You are a Vision Language Model (VLM) that can answer questions about images. Your friend, the Language Model (LLM), is trying to infer the camera movement from a source image to a target image. (Note that the first image you see is source image and the second one is target image) He said, "{LLM_Questions}" Please provide detailed answers to these questions based on the images you see, your responses should focus on describing the positions, movements, and relationships of objects in the images. Just answer his questions, do not directly tell him your judgement. Note that the camera movement is limited to only be one of six direction (three translations and three rotations), e.g. only left or right translation/translation. """
+
+        self.if_give_example = False
+
+        if self.if_give_example:
+            prompt += """Example: LLM: "Are there any objects that appear in both images?", VLM: "Yes, there is a chair and a table in both images.", LLM: "Where is the chair in the source image?"
+            VLM: "The chair is on the left side of the image.", LLM: "Where is the chair in the target image?", VLM: "The chair is now on the right side of the image.", LLM: "Given this information, it seems that the camera has rotated to the left, since the entire scene shifts rightward in the image plane, making objects appear to move from left to right. If the camera had no movement or rotated rightward, the chair would have either remained on the left side of the image or moved further left." """
 
         return prompt
 

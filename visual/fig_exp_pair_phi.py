@@ -27,9 +27,9 @@ for r in rounds:
     csv_files = [f for f in csv_files if f.endswith('stat.csv')]
     csv_files = sorted(csv_files)
 
-    if count >= 3:
-        break
-    count += 1
+    # if count >= 3:
+    #     break
+    # count += 1
 
     for csv_file in csv_files:
         csv_path = os.path.join(stat_folder, r, csv_file)
@@ -67,6 +67,9 @@ ax2.bar(df["round"], df["length of dataset"], alpha=0.3, label="length of datase
 ax2.tick_params(axis='y')
 
 fig.tight_layout()
-fig.legend(loc='center right')
+fig.legend(loc='upper right')
 
-plt.savefig("./Visual/fig/exp_pair_phi_metric_by_round_max_3.pdf")
+save_path = "./Visual/fig/exp_pair_phi_metric_by_round.pdf"
+plt.savefig(save_path)
+
+print(f"Save figure to {save_path}")

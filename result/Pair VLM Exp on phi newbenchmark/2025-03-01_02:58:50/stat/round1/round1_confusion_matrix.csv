@@ -1,0 +1,4 @@
+,leftward,rightward,no movement
+leftward,1,3,5
+rightward,1,7,5
+no movement,0,0,0

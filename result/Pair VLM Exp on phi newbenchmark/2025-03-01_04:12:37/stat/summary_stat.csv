@@ -1,0 +1,2 @@
+mode,subset,VLM,LLM,length of dataset,ask more questions percentage,accuracy,precision,recall,f1_score
+pair,phi,microsoft/Phi-3.5-vision-instruct,meta-llama/Meta-Llama-3-8B-Instruct,85,0.0,0.3411764705882353,0.5195135746606334,0.3411764705882353,0.40427891502241114

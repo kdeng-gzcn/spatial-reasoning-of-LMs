@@ -1,6 +1,6 @@
 import os
 import json
-import time
+import datetime
 
 import pandas as pd
 from tqdm import tqdm
@@ -16,7 +16,7 @@ class IndividualProcess(IndividualTemplate):
 
     def _make_results_dir(self):
 
-        current_time = int(time.time())
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
         # 1. result_dir with time
         self.result_time_dir = os.path.join(self.result_dir, f"{current_time}")

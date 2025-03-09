@@ -6,7 +6,7 @@ No use, only for template and archive
 
 class PromptTemplate():
     
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         pass
 

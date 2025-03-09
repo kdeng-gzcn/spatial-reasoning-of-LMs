@@ -1,6 +1,6 @@
 import os
 import json
-import time
+import datetime
 
 import pandas as pd
 from tqdm import tqdm
@@ -160,7 +160,7 @@ class Conversations_Pairwise_Image(ConversationTemplate):
         """
 
         # end of entire alg for all dagtaset
-        current_time = int(time.time())
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         self.result_time_dir = os.path.join(self.result_dir, f"{current_time}")
         os.makedirs(self.result_time_dir, exist_ok=True)
 

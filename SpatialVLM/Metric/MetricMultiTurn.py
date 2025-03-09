@@ -299,9 +299,9 @@ class Stat0123Conv:
             accuracy = accuracy_score(y_true, y_pred)
             
             # Precision, Recall, and F1 Score (for multi-class classification)
-            precision = precision_score(y_true, y_pred, pos_label="leftward", average="weighted")
-            recall = recall_score(y_true, y_pred, pos_label="leftward", average="weighted")
-            f1 = f1_score(y_true, y_pred, pos_label="leftward", average="weighted")
+            precision = precision_score(y_true, y_pred, average="weighted", zero_division=0)
+            recall = recall_score(y_true, y_pred, average="weighted", zero_division=0)
+            f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
 
             # Confusion Matrix
             labels = ["leftward", "rightward", "no movement"]
