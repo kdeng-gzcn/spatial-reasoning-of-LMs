@@ -12,9 +12,16 @@ conda activate VLM
 # Transformers Cache Dir (Necessary)
 export HF_HOME=/bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/cache/
 
+VLM_ID=microsoft/Phi-3.5-vision-instruct
+# VLM_ID=Qwen/Qwen2.5-VL-7B-Instruct
+RESULT_DIR=result/exp_individual_vlm_phi
+PROMPT_TYPE=VoT-zero-shot
+
 # Test
-python Experiments/Experiment0_IndividualVLM.py \
-    --VLM "microsoft/Phi-3.5-vision-instruct" \
-    --data_path "./benchmark/Rebuild_7_Scenes_1739853799" \
-    --result_path "./Result/Individual VLM Experiment phi newbenchmark/" \
-    --subset "phi"
+python experiments/experiment_1_individual_vlm.py \
+    --vlm_id ${VLM_ID} \
+    --data_path "benchmark/Rebuild_7_Scenes_1739853799" \
+    --result_path ${RESULT_DIR} \
+    --split "phi" \
+    --is_shuffle \
+    --prompt ${PROMPT_TYPE}
