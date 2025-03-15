@@ -2,7 +2,7 @@ import argparse
 import logging
 
 import sys
-sys.path.append("./")
+sys.path.append("") # this is main.py, which needs path
 
 from SpatialVLM.logging.logging_config import setup_logging
 from SpatialVLM.Individual.utils import load_process
@@ -16,32 +16,51 @@ def parse_args():
     parser.add_argument(
         "--data_path", 
         type=str, 
-        default="./data/Rebuild_7_Scenes_1200_1738445186", 
+        default="benchmark/Rebuild_7_Scenes_1739853799", 
         help="path for data stream", 
-        required=False
+        required=True
         )
     
     parser.add_argument(
-        "--subset", 
+        "--split", 
         type=str, 
+        choices=["phi", "psi", "theta", "tx", "ty", "tz", "all"], 
         default="phi", 
         help="path for data stream", 
-        required=False
-        )
+        required=True
+        )   
 
     parser.add_argument(
-        "--VLM", 
+        "--vlm_id", 
         type=str, 
-        default="???", 
-        required=False
+        default="microsoft/Phi-3.5-vision-instruct", 
+        required=True
         )
     
     parser.add_argument(
         "--result_path", 
         type=str, 
-        default="./Result/Individual VLM Experiment/", 
+        default="result/", 
         help="path for result", 
-        required=False
+        required=True
+        )
+    
+    parser.add_argument(
+        "--is_shuffle", 
+        action="store_true", 
+        help="is shuffle?",
+        required=False,
+        )
+    
+    parser.add_argument(
+        "--prompt_type", 
+        type=str,
+        choices=[
+            "zero-shot", "add-info-zero-shot", "VoT-zero-shot", "CoT-zero-shot"
+            ],
+        default="add-info-zero-shot", 
+        help="prompt type, with zero-shot, in-context, few-shot",
+        required=False,
         )
     
     return parser.parse_args()
@@ -52,17 +71,21 @@ def main(args):
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    logger.info(f"VLM: {args.VLM}")
+    logger.info(f"VLM_ID: {args.vlm_id}")
     logger.info(f"DataPath: {args.data_path}")
-    logger.info(f"Subset: {args.subset}")
+    logger.info(f"Split: {args.split}")
     logger.info(f"ResultPath: {args.result_path}")
+    logger.info(f"is_shuffle: {args.is_shuffle}")
+    logger.info(f"prompt_type: {args.prompt_type}")
 
     # 1. Conversation Algorithm Main
     kwargs = {
-        "VLM_id": args.VLM,
+        "VLM_id": args.vlm_id,
         "datapath": args.data_path,
-        "subset": args.subset,
+        "subset": args.split,
         "result dir": args.result_path,
+        "is_shuffle": args.is_shuffle,
+        "prompt_type": args.prompt_type,
     }
 
     pipeline = load_process(**kwargs)

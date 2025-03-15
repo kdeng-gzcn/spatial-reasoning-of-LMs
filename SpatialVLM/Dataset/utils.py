@@ -2,7 +2,7 @@ from SpatialVLM.Dataset import (
     SevenScenesImageDataset,
 )
 
-def load_dataset(dataset_name, data_root_dir, subset=None):
+def load_dataset(dataset_name, data_root_dir, split=None):
 
     """
     Loads a dataset by name.
@@ -20,7 +20,7 @@ def load_dataset(dataset_name, data_root_dir, subset=None):
     if dataset_name not in dataset_mapping:
         raise NotImplementedError(f"Dataset name {dataset_name} not supported.")
 
-    if subset not in [None, "tx", "ty", "tz", "theta", "phi", "psi"]:
-        raise NotImplementedError(f"Subset {subset} not supported.")
+    if split not in ["all", "tx", "ty", "tz", "theta", "phi", "psi"]:
+        raise NotImplementedError(f"Subset {split} not supported.")
 
-    return dataset_mapping[dataset_name](data_root_dir=data_root_dir, subset=subset)
+    return dataset_mapping[dataset_name](data_root_dir=data_root_dir, split=split)

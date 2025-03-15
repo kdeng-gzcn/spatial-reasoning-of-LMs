@@ -7,10 +7,10 @@ from torch.utils.data import Dataset
 
 class SevenScenesImageDataset(Dataset):
 
-    def __init__(self, data_root_dir=None, subset=None):
+    def __init__(self, data_root_dir=None, split=None):
 
         self.data_root_dir = data_root_dir
-        self.subset = subset
+        self.subset = split
 
         self.data = []
         self._load_image_pairs(self.data_root_dir)
@@ -19,7 +19,7 @@ class SevenScenesImageDataset(Dataset):
 
         assert isinstance(data_dir, str), "Error in data_dir"
 
-        if self.subset is None:
+        if self.subset == "all":
 
             for dof in os.listdir(self.data_root_dir):
                 dof_path = os.path.join(self.data_root_dir, dof)

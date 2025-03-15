@@ -3,15 +3,12 @@ from SpatialVLM.Individual import (
 )
 
 def load_process(**kwargs):
-    
     """
-    
     kwargs:
         VLM_id
         datapath
-        subset
-    
+        split
+        result_dir
     """
 
     return IndividualProcess(**kwargs)
-

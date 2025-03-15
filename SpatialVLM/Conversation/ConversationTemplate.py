@@ -32,7 +32,7 @@ class ConversationTemplate():
         self.len_conv = kwargs.get("len of conversations", None)
 
         # 1. data
-        dataset = load_dataset("7 Scenes", data_root_dir=data_path, subset=self.subset)
+        dataset = load_dataset("7 Scenes", data_root_dir=data_path, split=self.subset)
         self.dataloader = DataLoader(dataset, batch_size=1, shuffle=True, collate_fn=lambda x: x)
 
         # 2.VLM

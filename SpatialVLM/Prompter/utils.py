@@ -8,7 +8,7 @@ from SpatialVLM.Prompter.PrompterBaseline import (
         TaskDesc_Prompter4Baseline,
 )
 
-def load_prompter(prompter_type):
+def load_prompter(prompter_type, **kwargs):
 
     prompter_mapping = {
         "Begin for pair": TaskDesc_Prompter4Pair,
@@ -27,4 +27,4 @@ def load_prompter(prompter_type):
     if prompter_type not in prompter_mapping:
         raise NotImplementedError(f"Prompter type {prompter_type} not supported.")
 
-    return prompter_mapping[prompter_type]()
+    return prompter_mapping[prompter_type](**kwargs)

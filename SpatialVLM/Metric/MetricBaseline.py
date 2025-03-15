@@ -122,14 +122,13 @@ class Metric0123Baseline(MetricTemplate):
 
     def _extract_info(self, text):
 
-        ans_match = re.search(r"<ans>.*?(\d+).*?</ans>", text, re.IGNORECASE)
-        ans = int(ans_match.group(1) if ans_match else None)
-
-        rsn_match = re.search(r"<rsn>\s*(.*?)(?:\s*</rsn>|$|\s*<ques>)", text, re.DOTALL)
+        rsn_match = re.search(r"<rsn>\s*(.*?)(?:\s*</rsn>|\s*<ans>|$)", text, re.DOTALL)
         rsn = rsn_match.group(1) if rsn_match else "None"
 
-        ques_match = re.search(r"<ques>\s*(.*?)(?:\s*</ques>|$)", text, re.DOTALL)
-        ques = ques_match.group(1) if ques_match else "None"
+        ans_match = re.search(r"<ans>.*?(\d+).*?(?:</ans>|$)", text, re.IGNORECASE)
+        ans = int(ans_match.group(1)) if ans_match else None
+
+        ques = "None"
 
         return ans, rsn, ques
 
@@ -137,11 +136,9 @@ class Metric0123Baseline(MetricTemplate):
 
         self.ans, self.rsn, self.ques = self._extract_info(self.conclusion)
 
-        if self.ans is None: # avoid
-
+        if self.ans is None: # avoid NoneType error
             print("Answer Option Not Extracted")
-
-            self.ans = 0
+            self.ans = next(key for key, value in self.option_map.items() if value == "unable to judge")
 
         self.result_one_round = {
             "scene": self.metadata["scene"],
@@ -166,6 +163,15 @@ class Metric0123Baseline(MetricTemplate):
         self.metadata = metadata_dict
 
         self.process_conclusion()
+
+        result = {
+            "pred option": self.ans,
+            "pred text": self.option_map[self.ans],
+            "reason": self.rsn,
+            "question": self.ques,
+        }
+
+        return result
     
     def _evaluate(self):
 
@@ -198,9 +204,9 @@ class Stat0123:
         accuracy = accuracy_score(y_true, y_pred)
         
         # Precision, Recall, and F1 Score (for multi-class classification)
-        precision = precision_score(y_true, y_pred, average="weighted")
-        recall = recall_score(y_true, y_pred, average="weighted")
-        f1 = f1_score(y_true, y_pred, average="weighted")
+        precision = precision_score(y_true, y_pred, average="weighted", zero_division=0)
+        recall = recall_score(y_true, y_pred, average="weighted", zero_division=0)
+        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
 
         # Confusion Matrix
         labels = ["leftward", "rightward", "no movement"]

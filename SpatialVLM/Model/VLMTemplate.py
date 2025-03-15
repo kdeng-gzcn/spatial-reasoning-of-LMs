@@ -1,13 +1,17 @@
 import os
+from typing import List, Any, Tuple
 import base64
 import io
 from PIL import Image
+import logging
+
 import torch
 from torchvision.transforms import ToPILImage
 
 # load SpaceLLaVA
 from llama_cpp import Llama
 from llama_cpp.llama_chat_format import Llava15ChatHandler
+
 # load general hf VLM
 from transformers import pipeline, AutoProcessor, AutoModelForCausalLM
 # load llava-Next
@@ -17,10 +21,14 @@ from transformers import PaliGemmaForConditionalGeneration
 # load idefics2
 from transformers import Idefics2Processor, Idefics2ForConditionalGeneration
 
+from transformers import Qwen2_5_VLForConditionalGeneration
+from qwen_vl_utils import process_vision_info
+
 # 0. Original Template For VLM
 class VLMTemplate:
 
     def __init__(self, name: str = None):
+        self.logger = logging.getLogger(__name__)
 
         self.Tensor2PIL = ToPILImage()
         self.model_name = name
@@ -29,8 +37,8 @@ class VLMTemplate:
         self.message = None
     
     def pipeline(self, image=None, prompt: str = None):
-
         raise NotImplementedError
+
 
 class HuggingFaceVLM(VLMTemplate):
 
@@ -236,7 +244,6 @@ class Idefics2VLM(VLMTemplate):
 class Phi3VLM(VLMTemplate):
 
     def __init__(self, name=None):
-
         super().__init__(name=name)
 
         self.conversation = []
@@ -322,23 +329,15 @@ class Phi3VLM(VLMTemplate):
         
         return answer
     
-class Phi3VLM_History(VLMTemplate):
-
+class Phi3VLMHistory(VLMTemplate):
+    """
+    histroy func can not be used in the pipeline
+    """
     def __init__(self, name=None):
-
         super().__init__(name=name)
-
         self.conversation = []
         
     def _load_weight(self, model_id=None):
-        
-        # 1. parse model id
-        if self.model_name == None:
-
-            assert model_id is not None, "Need a model_id"
-            self.model_name = model_id
-
-        # 2. load model
         processor = AutoProcessor.from_pretrained(
             self.model_name, 
             trust_remote_code=True, 
@@ -353,39 +352,28 @@ class Phi3VLM_History(VLMTemplate):
             _attn_implementation='flash_attention_2'    
         )
         
-        # 3. return
         self.model = model
         self.processor = processor
 
-    def clearhistory(self):
-        
+    def _clear_history(self):
         self.conversation = []
         
     def pipeline(self, images=None, prompt: str = None):
-        
-        # 0. image pre-processing
         images = [self.Tensor2PIL(image) for image in images]
-
         prompt = "<|image_1|>\n<|image_2|>\n" + prompt
-
-        # 1. built chat history
         self.conversation.append(
             {
                 "role": "user", 
                 "content": prompt,
             },
         )
-        
-        # 2. apply chat template (return str)
+
         prompt = self.processor.tokenizer.apply_chat_template(
             self.conversation, 
             tokenize=False, 
-            add_generation_prompt=True
+            add_generation_prompt=True,
         )
 
-        # print(prompt)
-        
-        # 3. tokenizer the chat history (return dic with tensor and mask)
         inputs = self.processor(prompt, images, return_tensors="pt").to("cuda:0") 
 
         generation_args = { 
@@ -397,15 +385,12 @@ class Phi3VLM_History(VLMTemplate):
         generate_ids = self.model.generate(
             **inputs, 
             eos_token_id=self.processor.tokenizer.eos_token_id, 
-            **generation_args
+            **generation_args,
         )
 
         # remove input tokens 
         generate_ids = generate_ids[:, inputs['input_ids'].shape[1]:]
-
-        # print(self.processor.decode(generate_ids[0], skip_special_tokens=True))
         
-        # 5. decode output (with history)
         answer = self.processor.batch_decode(
             generate_ids, 
             skip_special_tokens=True, 
@@ -421,7 +406,9 @@ class Phi3VLM_History(VLMTemplate):
         
         return answer
 
+
 class SpaceLLaVA(VLMTemplate):
+
     def __init__(self, path="/bask/projects/j/jlxi8926-auto-sum/kdeng/doppelgangers/data/doppelgangers_dataset/doppelgangers/"):
         super().__init__()
 
@@ -503,6 +490,70 @@ class SpaceLLaVA(VLMTemplate):
         answer = results["choices"][0]["message"]["content"].strip()
         
         return answer
+    
+
+class QwenVisionInstruct(VLMTemplate):
+
+    def __init__(self, name=None):
+
+        super().__init__(name=name)
+
+        self.conversation = []
+        
+    def _load_weight(self):
+
+        self.processor = AutoProcessor.from_pretrained(self.model_name)
+        self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+            self.model_name, torch_dtype="auto", device_map="auto"
+        )
+
+    def _clear_history(self):
+        self.conversation = []
+        
+    def pipeline(self, images=Tuple[Any], prompt: str = None):
+        
+        images = [self.Tensor2PIL(image) for image in images]
+
+        self.conversation.append(
+            {
+                "role": "user", 
+                "content": [
+                    {"type": "image", "image": images[0],},
+                    {"type": "image", "image": images[1],},
+                    {"type": "text", "text": prompt},
+                ],
+            },
+        )
+
+        text = self.processor.apply_chat_template(
+            self.conversation, tokenize=False, add_generation_prompt=True, add_vision_id=True,
+        ) # important to have (add_vision_id=True)
+        image_inputs, video_inputs = process_vision_info(self.conversation)
+
+        inputs = self.processor(
+            text=[text],
+            images=image_inputs,
+            videos=video_inputs,
+            padding=True,
+            return_tensors="pt",
+        ).to("cuda")
+        
+        generated_ids = self.model.generate(**inputs, max_new_tokens=512)
+        generated_ids_trimmed = [
+            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+        output_text = self.processor.batch_decode(
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
+
+        self.conversation.append(
+            {
+                "role": "assitant", 
+                "content": output_text[0],
+            },
+        )
+        
+        return output_text[0]
         
 if __name__ == "__main__":
     pass
