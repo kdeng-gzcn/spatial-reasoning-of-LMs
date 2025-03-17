@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.prompter.PrompterTemplate import PromptTemplate
+from src.prompter.prompter_template import PromptTemplate
 from src.vlm_only_prompts import task_prompt_individual_vlm_zero_shot, addtional_info_zero_shot, VoT_zero_shot, CoT_zero_shot
 
 class TaskPrompterVLMOnly(PromptTemplate):

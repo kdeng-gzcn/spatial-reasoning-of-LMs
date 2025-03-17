@@ -4,9 +4,9 @@ from typing import Tuple
 import pandas as pd
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
-from .MetricTemplate import MetricTemplate
+from .parser_template import ParserTemplate
 
-class Metric012(MetricTemplate):
+class Metric012(ParserTemplate):
     def __init__(self, **kwargs):
         super().__init__()
         self.result_dict = []
@@ -157,7 +157,7 @@ class Stat012Conv:
 
         return stat
     
-class Metric0123Conv(MetricTemplate):
+class Metric0123Conv(ParserTemplate):
     def __init__(self):
         super().__init__()
 

@@ -3,10 +3,10 @@ import re
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 import pandas as pd
 
-from .MetricTemplate import MetricTemplate
+from .parser_template import ParserTemplate
 
 # Subclass for `012` classification task (Uncertain, Left, Right, )
-class Metric012Baseline(MetricTemplate):
+class Metric012Baseline(ParserTemplate):
 
     def __init__(self, **kwargs):
 
@@ -114,7 +114,7 @@ class Stat012:
         return stat
     
 
-class Metric0123Baseline(MetricTemplate):
+class Metric0123Baseline(ParserTemplate):
     def __init__(self):
         super().__init__()
 

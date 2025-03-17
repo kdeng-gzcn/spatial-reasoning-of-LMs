@@ -488,8 +488,8 @@ class QwenVisionInstruct(VLMTemplate):
         self.processor = AutoProcessor.from_pretrained(self.model_name)
         self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             self.model_name, 
-            # torch_dtype="auto",
-            torch_dtype=torch.bfloat16, # 2 bytes 
+            torch_dtype="auto",
+            # torch_dtype=torch.bfloat16, # 2 bytes 
             device_map="auto",
         )
 

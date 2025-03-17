@@ -2,11 +2,12 @@ from typing import Tuple
 
 import numpy as np
 
-from src.prompter.PrompterTemplate import PromptTemplate # no use
+from src.prompter.prompter_template import PromptTemplate # no use
 from src.multi_agents_prompts import (
     task_prompt_zero_shot,
+    dataset_prior_zero_shot,
     spatial_understanding_question_prompt_zero_shot,
-    spatial_reasoning_prompt_zero,
+    spatial_reasoning_prompt_zero_shot,
 )
 
 class TaskPrompterPairImageInput(PromptTemplate):
@@ -18,6 +19,8 @@ class TaskPrompterPairImageInput(PromptTemplate):
         prompt = task_prompt_zero_shot
         if self.prompt_type == "zero-shot":
             prompt = prompt
+        elif self.prompt_type == "add-info-zero-shot":
+            prompt += dataset_prior_zero_shot
         return prompt
 
 
@@ -30,6 +33,8 @@ class LLMQuestionToVLMPairImageInput(PromptTemplate):
         prompt = spatial_understanding_question_prompt_zero_shot.format(llm_questions=llm_questions)
         if self.prompt_type == "zero-shot":
             prompt = prompt
+        elif self.prompt_type == "add-info-zero-shot":
+            prompt += dataset_prior_zero_shot
         return prompt
 
 
@@ -72,7 +77,7 @@ class VLMAnswerToLLMPairImageInput(PromptTemplate):
     
     def __call__(self, vlm_answers: str) -> Tuple[str, dict]:
         option_map = self._shuffle_dict(self.short_dict) # short dict
-        prompt =spatial_reasoning_prompt_zero.format(
+        prompt =spatial_reasoning_prompt_zero_shot.format(
                 vlm_answers=vlm_answers,
                 opt1=self.detailed_dict[option_map[0]], 
                 opt2=self.detailed_dict[option_map[1]],
@@ -81,5 +86,7 @@ class VLMAnswerToLLMPairImageInput(PromptTemplate):
             )
         
         if self.prompt_type == "zero-shot":
+            prompt = prompt
+        elif self.prompt_type == "add-info-zero-shot":
             prompt = prompt
         return prompt, option_map

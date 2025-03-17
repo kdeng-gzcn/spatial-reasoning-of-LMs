@@ -1,1 +1,1 @@
-from .SevenScenesDataset import SevenScenesImageDataset
+from .seven_scenes_dataset import SevenScenesImageDataset

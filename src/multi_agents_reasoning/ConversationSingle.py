@@ -1,4 +1,4 @@
-from .ConversationTemplate import MultiAgentsReasoningTemplate
+from .system_reasoning_template import MultiAgentsReasoningTemplate
 
 class Conversations_Single_Image(MultiAgentsReasoningTemplate):
 

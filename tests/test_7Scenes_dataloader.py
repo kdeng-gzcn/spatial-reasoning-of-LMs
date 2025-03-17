@@ -1,7 +1,7 @@
 import sys
 sys.path.append("./")
 
-from src.dataset.SevenScenesDataset import SevenScenesImageDataset
+from src.dataset.seven_scenes_dataset import SevenScenesImageDataset
 from torch.utils.data import DataLoader
 
 data_path = './data/Rebuild_7_Scenes_1200'  # set root data_path

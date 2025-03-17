@@ -6,7 +6,7 @@ import torch
 from src.prompter.utils import load_prompter
 from src.dataset.utils import load_dataset
 from torch.utils.data import DataLoader
-from src.Metric.utils import load_metric
+from src.ans_parser.utils import load_metric
 from src.models.utils import load_model
 
 class MultiAgentsReasoningTemplate():

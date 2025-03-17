@@ -1,1 +1,1 @@
-from .BaselineProcess import VLMOnlyReasoning
+from .vlm_only_reasoning_for_pair_image_input import VLMOnlyReasoning

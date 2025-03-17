@@ -6,9 +6,7 @@ import torchvision.io as io
 from torch.utils.data import Dataset
 
 class SevenScenesImageDataset(Dataset):
-
     def __init__(self, data_root_dir=None, split=None):
-
         self.data_root_dir = data_root_dir
         self.subset = split
 
@@ -16,15 +14,12 @@ class SevenScenesImageDataset(Dataset):
         self._load_image_pairs(self.data_root_dir)
 
     def _load_image_pairs(self, data_dir=None):
-
         assert isinstance(data_dir, str), "Error in data_dir"
-
         if self.subset == "all":
-
             for dof in os.listdir(self.data_root_dir):
                 dof_path = os.path.join(self.data_root_dir, dof)
                 if not os.path.isdir(dof_path):
-                    continue    
+                    continue 
 
                 for scene in os.listdir(dof_path):
                     scene_path = os.path.join(dof_path, scene)
@@ -44,9 +39,7 @@ class SevenScenesImageDataset(Dataset):
                             self.data.append(pair_path)
 
         elif self.subset in ["tx", "ty", "tz", "theta", "phi", "psi"]:
-
             subset_path = os.path.join(self.data_root_dir, f"{self.subset}_Significant")
-
             for scene in os.listdir(subset_path):
                 scene_path = os.path.join(subset_path, scene)
                 if not os.path.isdir(scene_path):
@@ -71,7 +64,6 @@ class SevenScenesImageDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-
         pair_path = self.data[idx]
 
         source_path = os.path.join(pair_path, "source")
@@ -93,9 +85,7 @@ class SevenScenesImageDataset(Dataset):
         metadata = None
 
         if os.path.exists(metadata_path):
-
             with open(metadata_path, "r") as f:
-
                 metadata = json.load(f)
 
         item = {
@@ -204,8 +194,6 @@ class SevenScenesImageDataset(Dataset):
 #             print(f"Warning: Failed to read metadata {metadata_path}: {e}")
 #             return None
 
-
 if __name__ == "__main__":
-
     pass
         

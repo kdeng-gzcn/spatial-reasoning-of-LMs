@@ -1,4 +1,4 @@
-class MetricTemplate:
+class ParserTemplate:
     def __init__(self):
         pass
    
@@ -7,6 +7,3 @@ class MetricTemplate:
         
     def process_conclusion(self):
         raise NotImplementedError("Subclasses must implement the process_conversations method.")    
-    
-    def evaluate(self):
-        raise NotImplementedError("Subclasses must implement the evaluate method.")

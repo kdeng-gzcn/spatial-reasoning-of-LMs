@@ -7,7 +7,7 @@ import logging
 import pandas as pd
 from tqdm import tqdm
 
-from .BaselineTemplate import VLMOnlyReasoningTemplate
+from .vlm_only_reasoning_template import VLMOnlyReasoningTemplate
 
 class VLMOnlyReasoning(VLMOnlyReasoningTemplate):
     def __init__(self, **kwargs):
