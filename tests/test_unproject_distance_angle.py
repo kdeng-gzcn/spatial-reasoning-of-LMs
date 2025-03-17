@@ -53,7 +53,7 @@ import sys
 
 sys.path.append("./")
 
-from SpatialVLM.Dataset import SevenScenesImageDataset
+from src.dataset import SevenScenesImageDataset
 from torch.utils.data import DataLoader
 
 data_path = "./data/Rebuild_7_Scenes_120_1738712209"
