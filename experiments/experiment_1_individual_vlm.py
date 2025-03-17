@@ -4,8 +4,8 @@ import logging
 import sys
 sys.path.append("") # this is main.py, which needs path
 
-from SpatialVLM.logging.logging_config import setup_logging
-from SpatialVLM.Individual.utils import load_process
+from src.logging.logging_config import setup_logging
+from src.vlm_only_reasoning.utils import load_process
 
 def parse_args():
 
@@ -14,7 +14,7 @@ def parse_args():
         )
     
     parser.add_argument(
-        "--data_path", 
+        "--data_dir", 
         type=str, 
         default="benchmark/Rebuild_7_Scenes_1739853799", 
         help="path for data stream", 
@@ -38,9 +38,8 @@ def parse_args():
         )
     
     parser.add_argument(
-        "--result_path", 
-        type=str, 
-        default="result/", 
+        "--result_dir", 
+        type=str,
         help="path for result", 
         required=True
         )
@@ -58,41 +57,36 @@ def parse_args():
         choices=[
             "zero-shot", "add-info-zero-shot", "VoT-zero-shot", "CoT-zero-shot"
             ],
-        default="add-info-zero-shot", 
         help="prompt type, with zero-shot, in-context, few-shot",
-        required=False,
+        required=True,
         )
     
     return parser.parse_args()
 
 def main(args):
-
-    # 0. make sure arg parser and logging work
     setup_logging()
     logger = logging.getLogger(__name__)
 
     logger.info(f"VLM_ID: {args.vlm_id}")
-    logger.info(f"DataPath: {args.data_path}")
+    logger.info(f"DataPath: {args.data_dir}")
     logger.info(f"Split: {args.split}")
-    logger.info(f"ResultPath: {args.result_path}")
+    logger.info(f"ResultPath: {args.result_dir}")
     logger.info(f"is_shuffle: {args.is_shuffle}")
     logger.info(f"prompt_type: {args.prompt_type}")
 
-    # 1. Conversation Algorithm Main
     kwargs = {
         "VLM_id": args.vlm_id,
-        "datapath": args.data_path,
+        "datapath": args.data_dir,
         "subset": args.split,
-        "result dir": args.result_path,
+        "result dir": args.result_dir,
         "is_shuffle": args.is_shuffle,
         "prompt_type": args.prompt_type,
     }
 
     pipeline = load_process(**kwargs)
     pipeline()
-    
-if __name__ == "__main__":
 
-    args = parse_args()
-    
+
+if __name__ == "__main__":
+    args = parse_args()  
     main(args)

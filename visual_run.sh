@@ -6,7 +6,6 @@ module load baskerville
 # module load bask-apps/live
 # module load oneAPI-bundle/2024.2.0-CUDA-12.1.1
 
-# config for pandas
 module load GCC/12.3.0
 export LD_LIBRARY_PATH=/bask/apps/live/EL8-ice/software/GCCcore/12.3.0/lib64:$LD_LIBRARY_PATH
 

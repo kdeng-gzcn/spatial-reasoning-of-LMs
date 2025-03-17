@@ -1,103 +1,120 @@
+import sys
+sys.path.append("")
 import argparse
 import logging
 
-import sys
-sys.path.append("./")
-
-from SpatialVLM.logging.logging_config import setup_logging
-from SpatialVLM.Conversation.utils import load_process
+from src.logging.logging_config import setup_logging
+from src.multi_agents_reasoning.utils import load_process
 
 def parse_args():
-
     parser = argparse.ArgumentParser(
         description="Run Conversation Experiment pipeline"
         )
     
     parser.add_argument(
-        "--data_path", 
+        "--data_dir", 
         type=str, 
         default="./data/images_conversation", 
         help="path for data stream", 
-        required=False
+        required=True
         )
     
     parser.add_argument(
-        "--subset", 
+        "--split", 
         type=str, 
+        choices=["phi", "psi", "theta", "tx", "ty", "tz", "all"],
         default="phi", 
         help="path for data stream", 
-        required=False
+        required=True
         )
 
     parser.add_argument(
-        "--VLM", 
+        "--vlm_id", 
         type=str, 
-        default="llava-hf/llava-v1.6-mistral-7b-hf", 
-        required=False
+        required=True
         )
     
     parser.add_argument(
-        "--LLM", 
+        "--llm_id", 
         type=str, 
         default="meta-llama/Meta-Llama-3-8B-Instruct", 
-        required=False
+        required=True
         )
     
     parser.add_argument(
-        "--mode", 
+        "--vlm_image_input_type",
         type=str, 
-        default="single", 
+        default="pair", 
         choices=["single", "pair"], 
-        required=False
+        required=True
         )
     
     parser.add_argument(
-        "--result_path", 
+        "--result_dir", 
         type=str, 
         default="./Result/Pair Conversation Experiment/", 
         help="path for result", 
-        required=False
+        required=True
         )
 
     parser.add_argument(
-        "--max_len_conv",
+        "--max_len_of_conv",
         type=int,
-        default=10,
+        default=5,
         help="length max_len_conv conversation",
         required=False
+    )
+
+    parser.add_argument(
+        "--is_shuffle", 
+        action="store_true", 
+        help="is shuffle?",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--prompt_type", 
+        type=str,
+        choices=[
+            "zero-shot", "add-info-zero-shot", "VoT-zero-shot", "CoT-zero-shot"
+            ],
+        default="add-info-zero-shot", 
+        help="prompt type, with zero-shot, in-context, few-shot",
+        required=False,
     )
     
     return parser.parse_args()
 
-def main(args):
 
-    # 0. Logging
+def main(args):
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    logger.info(f"Mode: {args.mode}")
-    logger.info(f"LLM: {args.LLM}")
-    logger.info(f"VLM: {args.VLM}")
-    logger.info(f"DataPath: {args.data_path}")
-    logger.info(f"Subset: {args.subset}")
-    logger.info(f"ResultPath: {args.result_path}")
+    logger.info(f"LLM: {args.llm_id}")
+    logger.info(f"VLM: {args.vlm_id}")
+    logger.info(f"Image Input Type: {args.vlm_image_input_type}")
+    logger.info(f"DataPath: {args.data_dir}")
+    logger.info(f"Split: {args.split}")
+    logger.info(f"ResultPath: {args.result_dir}")
+    logger.info(f"is_shuffle: {args.is_shuffle}")
+    logger.info(f"prompt_type: {args.prompt_type}")
+    logger.info(f"max_len_of_conv: {args.max_len_of_conv}")
 
-    # 1. Global Config Args
     kwargs = {
-        "VLM_id": args.VLM,
-        "LLM_id": args.LLM,
-        "datapath": args.data_path,
-        "subset": args.subset,
-        "result dir": args.result_path,
-        "len of conversations": args.max_len_conv
+        "vlm_id": args.vlm_id,
+        "llm_id": args.llm_id,
+        "data_dir": args.data_dir,
+        "split": args.split,
+        "result_dir": args.result_dir,
+        "is_shuffle": args.is_shuffle,
+        "prompt_type": args.prompt_type,
+        "max_len_of_conv": args.max_len_of_conv,
+        "vlm_image_input_type": args.vlm_image_input_type,
     }
 
-    # 2. Load and Run Pipeline
-    pipeline = load_process(type="pair", **kwargs)
+    pipeline = load_process(type=args.vlm_image_input_type, **kwargs)
     pipeline()
 
 if __name__ == "__main__":
-
     args = parse_args()
-    
     main(args)
