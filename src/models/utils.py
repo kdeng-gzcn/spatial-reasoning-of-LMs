@@ -3,6 +3,7 @@ from src.models import (
     PhiVisionInstruct,
     QwenVisionInstruct,
     QwenInstruct,
+    Phi4VisionInstruct,
 )
 
 def load_model(model_name):
@@ -12,6 +13,7 @@ def load_model(model_name):
         "Qwen/Qwen2.5-VL-7B-Instruct": QwenVisionInstruct(name=model_name),
         "Qwen/Qwen2.5-7B-Instruct": QwenInstruct(name=model_name),
         "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B": QwenInstruct(name=model_name),
+        # "microsoft/Phi-4-multimodal-instruct": PhiVisionInstruct(name=model_name),
     }
 
     if model_name not in model_mapping:

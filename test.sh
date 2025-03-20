@@ -6,4 +6,4 @@ export HF_HOME=/bask/projects/j/jlxi8926-auto-sum/kdeng/SpatialVLM/cache/ # Tran
 source /bask/projects/j/jlxi8926-auto-sum/kdeng/anaconda3/etc/profile.d/conda.sh
 conda activate VLM
 
-python tests/test_qwen_instruct.py
+python tests/test_Phi_history.py

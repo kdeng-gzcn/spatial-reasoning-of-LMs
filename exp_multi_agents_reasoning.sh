@@ -12,15 +12,18 @@ VLM_ID=Qwen/Qwen2.5-VL-7B-Instruct
 # LLM_ID=meta-llama/Meta-Llama-3-8B-Instruct
 LLM_ID=Qwen/Qwen2.5-7B-Instruct
 RESULT_DIR=result/exp_multi_agents_reasoning
-PROMPT_TYPE=zero-shot
+# PROMPT_TYPE=zero-shot
+PROMPT_TYPE=add-info-zero-shot
 
 python experiments/experiment_2_multi_agents.py \
     --vlm_id ${VLM_ID} \
     --llm_id ${LLM_ID} \
-    --data_dir "benchmark/Rebuild_7_Scenes_1739853799" \
+    --data_dir "benchmark/RGBD_7_Scenes_Rebuilt" \
     --result_dir ${RESULT_DIR} \
     --vlm_image_input_type "pair" \
     --split "phi" \
     --is_shuffle \
     --prompt_type ${PROMPT_TYPE} \
-    --max_len_of_conv 10
+    --max_len_of_conv 10 \
+    --is_vlm_keep_hisroty \
+    # --is_remove_trap_var \

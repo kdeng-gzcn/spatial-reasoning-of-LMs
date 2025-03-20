@@ -8,6 +8,7 @@ from src.multi_agents_prompts import (
     dataset_prior_zero_shot,
     spatial_understanding_question_prompt_zero_shot,
     spatial_reasoning_prompt_zero_shot,
+    spatial_reasoning_prompt_without_trap_zero_shot,
 )
 
 class TaskPrompterPairImageInput(PromptTemplate):
@@ -43,6 +44,7 @@ class VLMAnswerToLLMPairImageInput(PromptTemplate):
         super().__init__()
         self.is_shuffle = kwargs.get("is_shuffle")
         self.prompt_type = kwargs.get("prompt_type")
+        self.is_remove_trap_var = kwargs.get("is_remove_trap_var")
 
         seed = 42
         np.random.seed(seed)
@@ -52,6 +54,12 @@ class VLMAnswerToLLMPairImageInput(PromptTemplate):
             1: "leftward",
             2: "rightward",
             3: "no movement",
+        }
+
+        self.short_dict_without_trap = {
+            0: "ask more questions",
+            1: "leftward",
+            2: "rightward",
         }
 
         self.detailed_dict = {
@@ -65,19 +73,23 @@ class VLMAnswerToLLMPairImageInput(PromptTemplate):
         if self.is_shuffle:
             keys = list(dict.keys())
             np.random.shuffle(keys)
-            new_dict = {
-                0: dict[keys[0]],
-                1: dict[keys[1]],
-                2: dict[keys[2]],
-                3: dict[keys[3]],
-            }
+            new_dict = {i: dict[keys[i]] for i in range(len(keys))}
             return  new_dict
         else:
             return dict
     
     def __call__(self, vlm_answers: str) -> Tuple[str, dict]:
-        option_map = self._shuffle_dict(self.short_dict) # short dict
-        prompt =spatial_reasoning_prompt_zero_shot.format(
+        if self.is_remove_trap_var:
+            option_map = self._shuffle_dict(self.short_dict_without_trap)
+            prompt = spatial_reasoning_prompt_without_trap_zero_shot.format(
+                vlm_answers=vlm_answers,
+                opt1=self.detailed_dict[option_map[0]], 
+                opt2=self.detailed_dict[option_map[1]],
+                opt3=self.detailed_dict[option_map[2]],
+            )
+        else:
+            option_map = self._shuffle_dict(self.short_dict)
+            prompt = spatial_reasoning_prompt_zero_shot.format(
                 vlm_answers=vlm_answers,
                 opt1=self.detailed_dict[option_map[0]], 
                 opt2=self.detailed_dict[option_map[1]],
@@ -86,7 +98,7 @@ class VLMAnswerToLLMPairImageInput(PromptTemplate):
             )
         
         if self.prompt_type == "zero-shot":
-            prompt = prompt
+            prompt = prompt # no changes
         elif self.prompt_type == "add-info-zero-shot":
-            prompt = prompt
+            prompt = prompt # no changes
         return prompt, option_map

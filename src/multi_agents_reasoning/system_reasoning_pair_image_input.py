@@ -65,10 +65,12 @@ class MultiAgentsPairImageInputReasoning(MultiAgentsReasoningTemplate):
             "split": self.split,
             "VLM": self.vlm_id,
             "vlm_image_input_type": self.vlm_image_input_type,
+            "is_vlm_keep_hisroty": self.is_vlm_keep_hisroty,
             "LLM": self.llm_id,
             "max_len_of_conv": self.max_len_of_conv,
             "prompt_type": self.prompt_type,
             "is_shuffle": self.is_shuffle,
+            "is_remove_trap_var": self.is_remove_trap_var,
             "result_dir": self.result_dir,
         }
         full_history = []
@@ -95,110 +97,32 @@ class MultiAgentsPairImageInputReasoning(MultiAgentsReasoningTemplate):
                 self.VLM._clear_history() # for differnt pair images, clear up history in VLM
 
                 task_prompt = self.task_prompter() # __call__
-
-                # full_history.append(
-                #     {
-                #         "scene": metadata["scene"],
-                #         "seq": metadata["seq"],
-                #         "pair": metadata["pair"],
-                #         "label_dof": metadata["significance"],
-                #         "label": metadata["significance_text"],
-                #         "label_val": metadata["significance_value"],
-                #         "idx": 1,
-                #         "speaker": "User",
-                #         "receiver": "LLM",
-                #         "content": task_prompt,
-                #     }
-                # )
-
                 self._full_history_append(full_history, metadata, 1, "User", "LLM", task_prompt)
 
-                llm_questions_to_vlm = self.LLM.pipeline(task_prompt)
-
+                llm_questions_to_vlm = self.spatial_question_prompter(
+                    self.LLM.pipeline(task_prompt)
+                )
+                self._full_history_append(full_history, metadata, 1, "LLM", "VLM", llm_questions_to_vlm)
                 for idx in range(self.max_len_of_conv): # for loop for max length or stop condition
                     if idx:
                         if pred["pred text"] != "ask more questions":
                             break
-
-                        llm_questions_to_vlm = pred["reason"] + pred["question"]
-
-                    llm_questions_to_vlm = self.spatial_question_prompter(llm_questions_to_vlm)
-
-                    # full_history.append(
-                    #     {
-                    #         "scene": metadata["scene"],
-                    #         "seq": metadata["seq"],
-                    #         "pair": metadata["pair"],
-                    #         "label_dof": metadata["significance"],
-                    #         "label": metadata["significance_text"],
-                    #         "label_val": metadata["significance_value"],
-                    #         "idx": idx+1,
-                    #         "speaker": "LLM",
-                    #         "receiver": "VLM",
-                    #         "content": llm_questions_to_vlm,
-                    #     }
-                    # )
-
-                    self._full_history_append(full_history, metadata, idx+1, "LLM", "VLM", llm_questions_to_vlm)
+                        llm_questions_to_vlm = pred["reason"] if pred["reason"] is not "None" else "" + pred["question"] if pred["question"] is not "None" else ""
+                        if not self.is_vlm_keep_hisroty:
+                            llm_questions_to_vlm = self.spatial_question_prompter(llm_questions_to_vlm)
+                        self._full_history_append(full_history, metadata, idx+1, "LLM", "VLM", llm_questions_to_vlm)
 
                     vlm_answers_to_llm, opt_map = self.spatial_reasoning_prompter(
                         self.VLM.pipeline(images, llm_questions_to_vlm)
                     )
-
-                    # full_history.append(
-                    #     {
-                    #         "scene": metadata["scene"],
-                    #         "seq": metadata["seq"],
-                    #         "pair": metadata["pair"],
-                    #         "label_dof": metadata["significance"],
-                    #         "label": metadata["significance_text"],
-                    #         "label_val": metadata["significance_value"],
-                    #         "idx": idx+1,
-                    #         "speaker": "VLM",
-                    #         "receiver": "LLM",
-                    #         "content": vlm_answers_to_llm,
-                    #     }
-                    # )
-
                     self._full_history_append(full_history, metadata, idx+1, "VLM", "LLM", vlm_answers_to_llm)
+                    if not self.is_vlm_keep_hisroty:
+                        self.VLM._clear_history() # for lower cost on memory, clear up history in VLM
 
                     llm_reasoning = self.LLM.pipeline(vlm_answers_to_llm)
-
-                    # full_history.append(
-                    #     {
-                    #         "scene": metadata["scene"],
-                    #         "seq": metadata["seq"],
-                    #         "pair": metadata["pair"],
-                    #         "label_dof": metadata["significance"],
-                    #         "label": metadata["significance_text"],
-                    #         "label_val": metadata["significance_value"],
-                    #         "idx": idx+1,
-                    #         "speaker": "LLM",
-                    #         "receiver": "User or VLM",
-                    #         "content": llm_reasoning,
-                    #     }
-                    # )
-
                     self._full_history_append(full_history, metadata, idx+1, "LLM", "User or VLM", llm_reasoning)
 
                     pred = self.parser(llm_reasoning, opt_map)
-
-                    # reasoning_result.append(
-                    #     {
-                    #         "scene": metadata["scene"],
-                    #         "seq": metadata["seq"],
-                    #         "pair": metadata["pair"],
-                    #         "label_dof": metadata["significance"],
-                    #         "label": metadata["significance_text"],
-                    #         "label_val": metadata["significance_value"],
-                    #         "idx": idx+1,
-                    #         "pred_option": pred["pred option"],
-                    #         "pred_text": pred["pred text"],
-                    #         "reason": pred["reason"],
-                    #         "question": pred["question"],
-                    #     }
-                    # )
-
                     self._reasoning_result_append(reasoning_result, metadata, idx+1, pred)
 
         result_root_dir = self._make_results_dir()

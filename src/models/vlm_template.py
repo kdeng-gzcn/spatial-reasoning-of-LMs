@@ -392,6 +392,71 @@ class PhiVisionInstruct(VLMTemplate):
             },
         )
         return response
+    
+class Phi4VisionInstruct(VLMTemplate):
+    """histroy func can not be used in the pipeline"""
+    def __init__(self, name: str):
+        super().__init__(name=name)
+        self.conversation = []
+        
+    def _load_weight(self):
+        self.processor = AutoProcessor.from_pretrained(
+            self.model_name, 
+            trust_remote_code=True, 
+            num_crops=4
+        ) 
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.model_name, 
+            device_map="cuda", 
+            trust_remote_code=True, 
+            torch_dtype="auto", # bfloat16
+            _attn_implementation='flash_attention_2'    
+        )
+
+    def _clear_history(self):
+        self.conversation = []
+        
+    def pipeline(self, images: Tuple[Any, Any], prompt: str) -> str:
+        images = [self.Tensor2PIL(image) for image in images]
+        prompt = "<|image_1|>\n<|image_2|>\n" + prompt
+        self.conversation.append(
+            {
+                "role": "user", 
+                "content": prompt,
+            },
+        )
+        prompt = self.processor.tokenizer.apply_chat_template(
+            self.conversation, 
+            tokenize=False, 
+            add_generation_prompt=True,
+        )
+        inputs = self.processor(prompt, images, return_tensors="pt").to(self.model.device) # model.device
+
+        generation_args = { 
+            "max_new_tokens": 1024, 
+            # "temperature": 0.0, 
+            "do_sample": False,
+        } 
+        generate_ids = self.model.generate(
+            **inputs, 
+            eos_token_id=self.processor.tokenizer.eos_token_id, 
+            **generation_args,
+        )
+
+        generate_ids = generate_ids[:, inputs['input_ids'].shape[1]:]
+        response = self.processor.batch_decode(
+            generate_ids, 
+            skip_special_tokens=True, 
+            clean_up_tokenization_spaces=False
+        )[0] 
+
+        self.conversation.append(
+            {
+                "role": "assitant", 
+                "content": response,
+            },
+        )
+        return response
 
 
 class SpaceLLaVA(VLMTemplate):
@@ -488,8 +553,8 @@ class QwenVisionInstruct(VLMTemplate):
         self.processor = AutoProcessor.from_pretrained(self.model_name)
         self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             self.model_name, 
-            torch_dtype="auto",
-            # torch_dtype=torch.bfloat16, # 2 bytes 
+            # torch_dtype="auto",
+            torch_dtype=torch.bfloat16, # 2 bytes 
             device_map="auto",
         )
 
@@ -498,18 +563,25 @@ class QwenVisionInstruct(VLMTemplate):
         
     def pipeline(self, images: Tuple[Any, Any], prompt: str) -> str:
         images = [self.Tensor2PIL(image) for image in images]
-
-        self.conversation.append(
-            {
-                "role": "user", 
-                "content": [
-                    {"type": "image", "image": images[0],},
-                    {"type": "image", "image": images[1],},
-                    {"type": "text", "text": prompt},
-                ],
-            },
-        )
-
+        if len(self.conversation) == 0: # first time
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": [
+                        {"type": "image", "image": images[0],},
+                        {"type": "image", "image": images[1],},
+                        {"type": "text", "text": prompt},
+                    ],
+                },
+            )
+        else: # not first time
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": prompt,
+                },
+            )
+        # self.logger.error(f"Length of Conversation: {len(self.conversation)}")
         text = self.processor.apply_chat_template(
             self.conversation, tokenize=False, add_generation_prompt=True, add_vision_id=True,
         ) # important to have (add_vision_id=True)
@@ -521,12 +593,16 @@ class QwenVisionInstruct(VLMTemplate):
             videos=video_inputs,
             padding=True,
             return_tensors="pt",
-        ).to(self.model.device) # model.device  
+        ).to(self.model.device) # model.device
+        del image_inputs, video_inputs
+        torch.cuda.empty_cache()
+
         with autocast():      
-            generated_ids = self.model.generate(
-                **inputs, 
-                max_new_tokens=512
-            )
+            with torch.no_grad():
+                generated_ids = self.model.generate(
+                    **inputs, 
+                    max_new_tokens=1024,
+                )
 
         generated_ids_trimmed = [
             out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
@@ -542,6 +618,8 @@ class QwenVisionInstruct(VLMTemplate):
                 "content": response,
             },
         )
+        del inputs, generated_ids, generated_ids_trimmed
+        torch.cuda.empty_cache()
         return response
         
 if __name__ == "__main__":

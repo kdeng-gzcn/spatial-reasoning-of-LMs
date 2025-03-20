@@ -12,12 +12,12 @@ conda activate VLM
 
 # VLM_ID=microsoft/Phi-3.5-vision-instruct
 VLM_ID=Qwen/Qwen2.5-VL-7B-Instruct
-RESULT_DIR=result/exp_vlm_only_reasoning_test_history
+RESULT_DIR=result/exp_vlm_only_reasoning_test_gpu
 PROMPT_TYPE=VoT-zero-shot
 
 python experiments/experiment_1_individual_vlm.py \
     --vlm_id ${VLM_ID} \
-    --data_dir "benchmark/Rebuild_7_Scenes_1739853799" \
+    --data_dir "benchmark/RGBD_7_Scenes_Rebuilt" \
     --result_dir ${RESULT_DIR} \
     --split "phi" \
     --is_shuffle \

@@ -1,5 +1,5 @@
 import sys
-sys.path.append("./")
+sys.path.append("")
 
 import requests
 from PIL import Image

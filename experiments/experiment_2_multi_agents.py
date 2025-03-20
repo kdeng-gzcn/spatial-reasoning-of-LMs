@@ -82,6 +82,20 @@ def parse_args():
         help="prompt type, with zero-shot, in-context, few-shot",
         required=False,
     )
+
+    parser.add_argument(
+        "--is_remove_trap_var",
+        action="store_true",
+        help="choose this to remove trap variable 'no movement'",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--is_vlm_keep_hisroty",
+        action="store_true",
+        help="choose this to keep history in VLM",
+        required=False,
+    )
     
     return parser.parse_args()
 
@@ -93,13 +107,15 @@ def main(args):
     logger.info(f"LLM: {args.llm_id}")
     logger.info(f"VLM: {args.vlm_id}")
     logger.info(f"Image Input Type: {args.vlm_image_input_type}")
+    logger.info(f"is_vlm_keep_hisroty: {args.is_vlm_keep_hisroty}")
     logger.info(f"DataPath: {args.data_dir}")
     logger.info(f"Split: {args.split}")
     logger.info(f"ResultPath: {args.result_dir}")
     logger.info(f"is_shuffle: {args.is_shuffle}")
+    logger.info(f"is_remove_trap_var: {args.is_remove_trap_var}")
     logger.info(f"prompt_type: {args.prompt_type}")
     logger.info(f"max_len_of_conv: {args.max_len_of_conv}")
-
+    
     kwargs = {
         "vlm_id": args.vlm_id,
         "llm_id": args.llm_id,
@@ -107,9 +123,11 @@ def main(args):
         "split": args.split,
         "result_dir": args.result_dir,
         "is_shuffle": args.is_shuffle,
+        "is_remove_trap_var": args.is_remove_trap_var,
         "prompt_type": args.prompt_type,
         "max_len_of_conv": args.max_len_of_conv,
         "vlm_image_input_type": args.vlm_image_input_type,
+        "is_vlm_keep_hisroty": args.is_vlm_keep_hisroty,
     }
 
     pipeline = load_process(type=args.vlm_image_input_type, **kwargs)

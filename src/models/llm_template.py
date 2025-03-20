@@ -129,10 +129,11 @@ class QwenInstruct(LLMTemplate):
         )
         model_inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
         with autocast():
-            generated_ids = self.model.generate(
-                **model_inputs,
-                max_new_tokens=1024,
-            )
+            with torch.no_grad():
+                generated_ids = self.model.generate(
+                    **model_inputs,
+                    max_new_tokens=1024,
+                )
 
         generated_ids = [
             output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
@@ -145,5 +146,7 @@ class QwenInstruct(LLMTemplate):
                 "content": response,
             },
         )
+        del model_inputs, generated_ids
+        torch.cuda.empty_cache()
         return response
     

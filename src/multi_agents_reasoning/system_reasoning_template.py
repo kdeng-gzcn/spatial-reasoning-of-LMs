@@ -27,6 +27,8 @@ class MultiAgentsReasoningTemplate():
         self.prompt_type = kwargs.get("prompt_type")
         self.max_len_of_conv = kwargs.get("max_len_of_conv")
         self.vlm_image_input_type = kwargs.get("vlm_image_input_type")
+        self.is_remove_trap_var = kwargs.get("is_remove_trap_var")
+        self.is_vlm_keep_hisroty = kwargs.get("is_vlm_keep_hisroty")
 
         dataset = load_dataset("7 Scenes", data_root_dir=self.data_dir, split=self.split)
         self.dataloader = DataLoader(dataset, batch_size=1, shuffle=True, collate_fn=lambda x: x)
@@ -40,6 +42,7 @@ class MultiAgentsReasoningTemplate():
         prompter_config = {
             "prompt_type": self.prompt_type,
             "is_shuffle": self.is_shuffle,
+            "is_remove_trap_var": self.is_remove_trap_var,
         }
 
         self.task_prompter = load_prompter("Task Prompt for Pair Image Input", **prompter_config)
