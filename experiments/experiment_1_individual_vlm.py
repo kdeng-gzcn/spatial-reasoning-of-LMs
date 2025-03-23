@@ -2,7 +2,7 @@ import argparse
 import logging
 
 import sys
-sys.path.append("") # this is main.py, which needs path
+sys.path.append("")
 
 from src.logging.logging_config import setup_logging
 from src.vlm_only_reasoning.utils import load_process

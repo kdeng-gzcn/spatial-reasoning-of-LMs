@@ -149,4 +149,11 @@ class QwenInstruct(LLMTemplate):
         del model_inputs, generated_ids
         torch.cuda.empty_cache()
         return response
+
+class GPTInstrucTemplate:
+    def __init__(self):
+        pass
+        
+    def __call__(self):
+        raise NotImplementedError()
     

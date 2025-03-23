@@ -23,7 +23,17 @@ Interaction Guidelines:
 - You may engage in **multiple rounds of interaction** with the VLM to refine your understanding.
 - Do not believe in the VLM's answers blindly. His conclusionts may contain errors. You need to be super specific in how the objects have moved compared to source image, this is the only objective way to determine the camera movement.
 - Always **cross-verify** the information provided.
+- VLM can observe the images pair are similar but different, but it may be hard for VLM to say how objects shift at first. When the VLM did not provide objective information about object shifts, you should ask more questions to get the necessary objective information.
 
+Additional Reasoning Sklls:
+- If you confirm that the objects shift to the left compared to the source image, the camera has rotated to the right.
+- If you confirm that the objects shift to the right compared to the source image, the camera has rotated to the left.
+- So you need to be very confirmed how object shifts compared to the source image.
+
+Now, formulate your first-turn structured questions for the VLM to begin the reasoning process.
+"""
+
+"""
 Example Interaction:
 - You: "Can you describe the main objects in the source image?"
 - VLM: "The source image contains a red cube and a blue sphere."
@@ -34,15 +44,12 @@ Example Interaction:
 - You: "Thank you. How has the blue sphere's position changed?"
 - VLM: "The blue sphere in the target image appears to be positioned slightly to the left compared to its location in the source image."
 - You: "Based on this information, both objects have moved slightly to the left. Therefore, the camera has rotated slightly to the right."
-
-Now, formulate your first-turn structured questions for the VLM to begin the reasoning process.
 """
 
 dataset_prior_zero_shot = """
 Additional Context:
 - This dataset only contains **camera yaw rotations** (leftward or rightward) of approximately **15 degrees** between the source and target images. This constraint simplifies the problem: there is no combination of multiple movements or complex transformations.
-- The dataset consists of pairs of images, each pair showing the same scene from slightly different perspectives due to the camera movement.
-- The scene contains a few objects, and the camera movement causes the objects to shift slightly in the images.
+- The dataset consists of pairs of images, each pair showing the same scene from slightly different perspectives due to the camera movement. It is essential to compare the slight changes in object positions in the target image compared to the source image.
 """
 
 spatial_understanding_question_prompt_zero_shot = """You are a Vision Language Model (VLM) assisting your Language Model (LLM) colleague in a 3D scene reasoning problem. You are given two similar but different images: a source image and a target image (the first image is the source image and the second image is the target image). The images show a 3D scene with multiple objects. The camera has moved slightly between the two images, causing the objects to shift in position.
@@ -58,7 +65,7 @@ Your Role:
 spatial_reasoning_prompt_zero_shot = """Your collaborator, the Vision Language Model (VLM), has provided the following observations about the images:  
 "{vlm_answers}"  
 
-Based on this information, determine the primary camera movement from the source image to the target image. Ensure your reasoning is well-supported by the information provided by the VLM. Choose one of the following options:  
+Ensure your reasoning is well-supported by the objective information provided by the VLM, do not believe in the VLM's subjective answers blindly. Choose one of the following options:  
 
 - (0) {opt1}  
 - (1) {opt2}  
@@ -83,7 +90,7 @@ Example Response Format:
 spatial_reasoning_prompt_without_trap_zero_shot = """Your collaborator, the Vision Language Model (VLM), has provided the following observations about the images:  
 "{vlm_answers}"  
 
-Based on this information, determine the primary camera movement from the source image to the target image. Ensure your reasoning is well-supported by the information provided by the VLM. Choose one of the following options:  
+Ensure your reasoning is well-supported by the objective information provided by the VLM, do not believe in the VLM's subjective answers blindly. Choose one of the following options:   
 
 - (0) {opt1}  
 - (1) {opt2}  
