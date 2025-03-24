@@ -13,7 +13,7 @@ from src.multi_agents_prompts import (
 
 class TaskPrompterPairImageInput(PromptTemplate):
     def __init__(self, **kwargs):
-        super().__init__() # no use
+        super().__init__() # seed 
         self.prompt_type = kwargs.get("prompt_type")
 
     def __call__(self) -> str:
@@ -41,13 +41,11 @@ class LLMQuestionToVLMPairImageInput(PromptTemplate):
 
 class VLMAnswerToLLMPairImageInput(PromptTemplate):
     def __init__(self, **kwargs):
-        super().__init__()
+        super().__init__() # seed
+        self.split = kwargs.get("split")
         self.is_shuffle = kwargs.get("is_shuffle")
         self.prompt_type = kwargs.get("prompt_type")
         self.is_remove_trap_var = kwargs.get("is_remove_trap_var")
-
-        seed = 42
-        np.random.seed(seed)
 
         self.short_dict = {
             0: "ask more questions",

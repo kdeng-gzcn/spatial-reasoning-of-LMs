@@ -1,6 +1,9 @@
+import os
+
 import torch
 from torch.cuda.amp import autocast
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from openai import OpenAI
 
 class LLMTemplate:
     def __init__(self):
@@ -79,7 +82,7 @@ class LlamaInstruct(LLMTemplate):
         # 3. add chat history
         self.messages.append(
             {
-                "role": "assitant", 
+                "role": "assistant", 
                 "content": answer,
             },
         )
@@ -142,7 +145,7 @@ class QwenInstruct(LLMTemplate):
 
         self.messages.append(
             {
-                "role": "assitant", 
+                "role": "assistant", 
                 "content": response,
             },
         )
@@ -150,10 +153,44 @@ class QwenInstruct(LLMTemplate):
         torch.cuda.empty_cache()
         return response
 
-class GPTInstrucTemplate:
-    def __init__(self):
-        pass
+
+class GPTInstruct:
+    def __init__(self, name: str):
+        super().__init__()
+        self.model_name = name
+        self.messages = [
+            {
+                "role": "system", 
+                "content": "You are an intelligent assistant capable of coordinating complex tasks and providing insightful reasoning.",
+            },
+        ]
+
+    def _clear_history(self):
+        self.messages = []
         
-    def __call__(self):
-        raise NotImplementedError()
+    def _load_weight(self):
+        """load model and tokenizer from openai"""
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+    def pipeline(self, prompt: str) -> str:
+        self.messages.append(
+            {
+                "role": "user", 
+                "content": prompt,
+            }
+        )
+
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=self.messages,
+        )
+        response = response.choices[0].message.content
+
+        self.messages.append(
+            {
+                "role": "assistant", 
+                "content": response,
+            },
+        )
+        return response
     

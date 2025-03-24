@@ -14,7 +14,7 @@ def load_prompter(prompter_type, **kwargs):
         "Spatial Understanding Question Prompt for Pair Image Input": LLMQuestionToVLMPairImageInput,
         "Spatial Reasoning Prompt for Pair Image Input": VLMAnswerToLLMPairImageInput,
 
-        "Task Description for Baseline": TaskPrompterVLMOnly,
+        "Task Prompt for VLM-Only Reasoning": TaskPrompterVLMOnly,
     }
 
     if prompter_type not in prompter_mapping:

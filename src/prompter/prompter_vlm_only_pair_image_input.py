@@ -1,18 +1,22 @@
 import numpy as np
 
 from src.prompter.prompter_template import PromptTemplate
-from src.vlm_only_prompts import task_prompt_individual_vlm_zero_shot, addtional_info_zero_shot, VoT_zero_shot, CoT_zero_shot
+from src.utils import *
+from src.vlm_only_prompts import (
+    task_prompt_individual_vlm_zero_shot, 
+    addtional_info_zero_shot, 
+    VoT_zero_shot, 
+    CoT_zero_shot,
+    CoT_prompt,
+    VoT_promopt,
+)
 
 class TaskPrompterVLMOnly(PromptTemplate):
     def __init__(self, **kwargs):
-        super().__init__()
-        self.split = None
-
-        self.is_shuffle = kwargs.get("is_shuffle", False)
+        super().__init__() # seed
+        self.split = kwargs.get("split")
+        self.is_shuffle = kwargs.get("is_shuffle")
         self.prompt_type = kwargs.get("prompt_type")
-        
-        seed = 42
-        np.random.seed(seed)
 
         self.short_dict = {
             0: "unable to judge",
@@ -32,12 +36,7 @@ class TaskPrompterVLMOnly(PromptTemplate):
         if self.is_shuffle:
             keys = list(dict.keys())
             np.random.shuffle(keys)
-            new_dict = {
-                0: dict[keys[0]],
-                1: dict[keys[1]],
-                2: dict[keys[2]],
-                3: dict[keys[3]],
-            }
+            new_dict = {i: dict[keys[i]] for i in range(len(keys))}
             return  new_dict
         else:
             return dict
@@ -59,6 +58,10 @@ class TaskPrompterVLMOnly(PromptTemplate):
             prompt += addtional_info_zero_shot + VoT_zero_shot
         elif self.prompt_type == "CoT-zero-shot":
             prompt += addtional_info_zero_shot + CoT_zero_shot
+        elif self.prompt_type == "CoT-prompt":
+            prompt += addtional_info_zero_shot + CoT_prompt
+        elif self.prompt_type == "VoT-prompt":
+            prompt += addtional_info_zero_shot + VoT_zero_shot + VoT_promopt
 
         return prompt, option_map
     

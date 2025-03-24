@@ -3,7 +3,9 @@ from src.models import (
     PhiVisionInstruct,
     QwenVisionInstruct,
     QwenInstruct,
-    Phi4VisionInstruct,
+    GPTInstruct,
+    GPTVisionInstruct,
+    LlavaNextInstruct,
 )
 
 def load_model(model_name):
@@ -13,7 +15,11 @@ def load_model(model_name):
         "Qwen/Qwen2.5-VL-7B-Instruct": QwenVisionInstruct(name=model_name),
         "Qwen/Qwen2.5-7B-Instruct": QwenInstruct(name=model_name),
         "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B": QwenInstruct(name=model_name),
-        # "microsoft/Phi-4-multimodal-instruct": PhiVisionInstruct(name=model_name),
+        "gpt-4o-mini": GPTVisionInstruct(name=model_name),
+        "gpt-4o": GPTVisionInstruct(name=model_name),
+        "gpt-4": GPTInstruct(name=model_name), # llm
+        "gpt-4-turbo": GPTVisionInstruct(name=model_name),
+        # "llava-hf/llava-v1.6-mistral-7b-hf": LlavaNextInstruct(name=model_name), 
     }
 
     if model_name not in model_mapping:

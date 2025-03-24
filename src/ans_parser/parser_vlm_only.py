@@ -25,7 +25,7 @@ class Metric012Baseline(ParserTemplate):
 
         return ans, rsn, ques
 
-    def process_conclusion(self):
+    def _process_conclusion(self):
 
         self.ans, self.rsn, self.ques = self._extract_info(self.conclusion)
 
@@ -55,7 +55,7 @@ class Metric012Baseline(ParserTemplate):
         self.conclusion = conclusion_from_LLM
         self.metadata = metadata_dict
 
-        self.process_conclusion()
+        self._process_conclusion()
     
     def _evaluate(self):
 
@@ -128,33 +128,33 @@ class Metric0123Baseline(ParserTemplate):
         ques = "None"
         return ans, rsn, ques
 
-    def process_conclusion(self):
+    def _process_conclusion(self):
         self.ans, self.rsn, self.ques = self._extract_info(self.conclusion)
-        if self.ans is None: # avoid NoneType error
+        if self.ans is None or self.ans not in [0, 1, 2, 3]: # avoid NoneType error
             print("Answer Option Not Extracted")
             self.ans = next(key for key, value in self.option_map.items() if value == "unable to judge")
 
-        self.result_one_round = {
-            "scene": self.metadata["scene"],
-            "seq": self.metadata["seq"],
-            "pair": self.metadata["pair"],
-            "dof": self.metadata["significance"],
-            "label text": self.metadata["significance_text"],
-            "label value": self.metadata["significance_value"],
-            "pred option": self.ans,
-            "pred text": self.option_map[self.ans],
-            "reason": self.rsn,
-            "question": self.ques,
-        }
+        # self.result_one_round = {
+        #     "scene": self.metadata["scene"],
+        #     "seq": self.metadata["seq"],
+        #     "pair": self.metadata["pair"],
+        #     "dof": self.metadata["significance"],
+        #     "label text": self.metadata["significance_text"],
+        #     "label value": self.metadata["significance_value"],
+        #     "pred option": self.ans,
+        #     "pred text": self.option_map[self.ans],
+        #     "reason": self.rsn,
+        #     "question": self.ques,
+        # }
 
-        self.result_dict.append(self.result_one_round)
+        # self.result_dict.append(self.result_one_round)
 
     def __call__(self, conclusion_from_LLM: str, metadata_dict: dict, mapping: dict) -> dict:
         self.option_map = mapping
         self.conclusion = conclusion_from_LLM
         self.metadata = metadata_dict
 
-        self.process_conclusion()
+        self._process_conclusion()
 
         result = {
             "pred option": self.ans,
@@ -164,59 +164,3 @@ class Metric0123Baseline(ParserTemplate):
         }
 
         return result
-    
-    def _evaluate(self):
-        results = Stat0123(self.result_dict)._calculate_metrics()
-        return results
-
-# Class to calculate evaluation metrics for the `012` classification task
-class Stat0123:
-
-    def __init__(self, result_dict):
-
-        self.data = pd.DataFrame(result_dict)
-
-    def _calculate_metrics(self):
-
-        self.stat = {}
-
-        total_samples = len(self.data)
-        count_zero = len(self.data[self.data["pred text"] == "unable to judge"])
-        zero_percentage = count_zero / total_samples * 100
-
-        filtered_data = self.data[self.data["pred text"] != "unable to judge"]
-
-        y_true = filtered_data["label text"]
-        y_pred = filtered_data["pred text"]
-
-        # Accuracy
-        accuracy = accuracy_score(y_true, y_pred)
-        
-        # Precision, Recall, and F1 Score (for multi-class classification)
-        precision = precision_score(y_true, y_pred, average="weighted", zero_division=0)
-        recall = recall_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-
-        # Confusion Matrix
-        labels = ["leftward", "rightward", "no movement"]
-        cm = confusion_matrix(y_true, y_pred, labels=labels)
-        cm_df = pd.DataFrame(cm, index=labels, columns=labels)
-
-        # Assuming you already have total_samples and zero_percentage calculated
-        scalar_metrics = {
-            "length of dataset": [total_samples],  # Total samples
-            "unable to answer percentage": [zero_percentage],  # Make sure you have this value defined
-            "accuracy": [accuracy],
-            "precision": [precision],
-            "recall": [recall],
-            "f1_score": [f1],
-        }
-
-        metrics = {
-            "scalar metrics": scalar_metrics,
-            "confusion matrix": cm_df
-        }
-
-        self.stat[f"summary stat"] = metrics
-
-        return self.stat

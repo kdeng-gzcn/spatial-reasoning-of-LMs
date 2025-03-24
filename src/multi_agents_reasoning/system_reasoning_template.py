@@ -6,7 +6,7 @@ import torch
 from src.prompter.utils import load_prompter
 from src.dataset.utils import load_dataset
 from torch.utils.data import DataLoader
-from src.ans_parser.utils import load_metric
+from src.ans_parser.utils import load_ans_parser
 from src.models.utils import load_model
 
 class MultiAgentsReasoningTemplate():
@@ -49,7 +49,7 @@ class MultiAgentsReasoningTemplate():
         self.spatial_question_prompter = load_prompter("Spatial Understanding Question Prompt for Pair Image Input", **prompter_config)
         self.spatial_reasoning_prompter = load_prompter("Spatial Reasoning Prompt for Pair Image Input", **prompter_config)
 
-        self.parser = load_metric("Reasoning Parser for Pair Image Input")
+        self.parser = load_ans_parser("Reasoning Parser for Pair Image Input")
 
     def __call__(self):
         raise NotImplementedError()

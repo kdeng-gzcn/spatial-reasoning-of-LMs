@@ -17,7 +17,7 @@ class Metric012(ParserTemplate):
         self.conclusion = conclusion_from_LLM
         self.metadata = metadata_dict
 
-        self.process_conclusion()
+        self._process_conclusion()
 
     def _extract_info(self, text):
 
@@ -32,7 +32,7 @@ class Metric012(ParserTemplate):
 
         return ans, rsn, ques
 
-    def process_conclusion(self):
+    def _process_conclusion(self):
 
         self.ans, self.rsn, self.ques = self._extract_info(self.conclusion)
 

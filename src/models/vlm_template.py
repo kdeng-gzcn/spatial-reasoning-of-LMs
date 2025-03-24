@@ -9,23 +9,21 @@ import torch
 from torch.cuda.amp import autocast
 from torchvision.transforms import ToPILImage
 
-# load SpaceLLaVA
-from llama_cpp import Llama
-from llama_cpp.llama_chat_format import Llava15ChatHandler
+from openai import OpenAI
 
-# load general hf VLM
-from transformers import pipeline, AutoProcessor, AutoModelForCausalLM
-# load llava-Next
-from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
-# load paligemma
-from transformers import PaliGemmaForConditionalGeneration
-# load idefics2
-from transformers import Idefics2Processor, Idefics2ForConditionalGeneration
+# from llama_cpp import Llama
+# from llama_cpp.llama_chat_format import Llava15ChatHandler
 
-from transformers import Qwen2_5_VLForConditionalGeneration
+from transformers import (
+    AutoProcessor, AutoModelForCausalLM,
+    AutoModelForImageTextToText,
+    LlavaNextProcessor, LlavaNextForConditionalGeneration,
+    Idefics2Processor, Idefics2ForConditionalGeneration,
+    Qwen2_5_VLForConditionalGeneration,
+)
+
 from qwen_vl_utils import process_vision_info
 
-# 0. Original Template For VLM
 class VLMTemplate:
     def __init__(self, name: str):
         self.logger = logging.getLogger(__name__)
@@ -35,149 +33,89 @@ class VLMTemplate:
     
     def pipeline(self, image: Tuple[Any, Any], prompt: str) -> str:
         raise NotImplementedError
+    
 
-
-class HuggingFaceVLM(VLMTemplate):
-
-    def __init__(self, name: str = None):
+class LlavaNextInstruct(VLMTemplate):
+    def __init__(self, name: str):
         super().__init__(name=name)
-
-        # conversation
-        self.message = None
+        self.conversation = []
         
-    def __call__(self):
+    def _load_weight(self) -> None:
+        self.processor = LlavaNextProcessor.from_pretrained(self.model_name, use_fast=True)
+        self.model = LlavaNextForConditionalGeneration.from_pretrained(
+            self.model_name, 
+            torch_dtype=torch.float16, 
+            device_map="auto",
+            low_cpu_mem_usage=True,
+        )
         
-        # 1. parse model id
-        model_id = self.model_name
-
-        # 2. switch model (llava-Next, Paligemma, ide2-8b)
-        if model_id == "llava-hf/llava-v1.6-mistral-7b-hf":
-
-            processor = LlavaNextProcessor.from_pretrained(model_id)
-            model = LlavaNextForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True).to("cuda:0")
-
-        if model_id == "google/paligemma-3b-mix-224":
-
-            device = "cuda:0"
-            dtype = torch.bfloat16
-            model = PaliGemmaForConditionalGeneration.from_pretrained(
-                model_id,
-                torch_dtype=dtype,
-                device_map=device,
-                revision="bfloat16",
-            ).eval()
-            processor = AutoProcessor.from_pretrained(model_id)
+    def _clear_history(self) -> None:
+        self.conversation = []
         
-        # 3. return
-        self.model = model
-        self.processor = processor
-        
-    def pipeline(self, image=None, prompt: str = None):
-        
-        # 0. image pre-processing
-        image = self.Tensor2PIL(image)
-
-        # 1. switch model (differenct model has different pipeline template
-        if 1:
-            # 1. built chat history
-            conversation = [
+    def pipeline(self, images: Tuple[Any, Any], prompt: str) -> str:
+        images = [self.Tensor2PIL(image) for image in images]
+        if len(self.conversation) == 0: # first time
+            self.conversation.extend([
                 {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {"type": "image"},
+                    "role": "user",
+                    "content": [
+                        {"type": "image"},
+                        {"type": "text", "text": "Can you see this first image?"},
                     ],
                 },
-            ]
-            
-            # 2. apply chat template
-            prompt = self.processor.apply_chat_template(conversation, add_generation_prompt=True)
-            
-            # 3. tokenizer the chat history
-            inputs = self.processor(images=image, text=prompt, return_tensors="pt").to("cuda:0")
-
-            # 4. run model inference
-            output = self.model.generate(
-                **inputs, 
-                pad_token_id=self.processor.eos_token_id,
-                max_new_tokens=200
-                )
-            
-            # 5. decode output (with history)
-            answer = self.processor.decode(output[0], skip_special_tokens=True)
-        
-        return answer
-
-class LlavaNextVLM(VLMTemplate):
-
-    def __init__(self, name=None):
-
-        super().__init__(name=name)
-        
-    def load_model(self, model_id: str = None):
-        
-        # 1. parse model id
-        self.model_name = model_id
-
-        # 2. load model
-        processor = LlavaNextProcessor.from_pretrained(model_id)
-        model = LlavaNextForConditionalGeneration.from_pretrained(
-            model_id, 
-            torch_dtype=torch.float16, 
-            low_cpu_mem_usage=True
-            ).to("cuda:0")
-        
-        # 3. return
-        self.model = model
-        self.processor = processor
-        
-    def pipeline(self, image=None, prompt: str = None):
-        
-        # 0. image pre-processing
-        image = self.Tensor2PIL(image)
-
-        # 1. built chat history
-        conversation = [
-            {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image"},
-                ],
-            },
-        ]
-        
-        # 2. apply chat template (return str)
-        prompt = self.processor.apply_chat_template(conversation, add_generation_prompt=True)
-
-        # print(prompt)
-        
-        # 3. tokenizer the chat history (return dic with tensor and mask)
-        inputs = self.processor(images=image, text=prompt, return_tensors="pt").to("cuda:0")
-        input_ids = inputs['input_ids']
-
-        # 4. run model inference (return 2d tensor)
-        output = self.model.generate(
-            **inputs,
-            max_new_tokens=200
+                {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "text", "text": "Yes, I can see the image."},
+                    ],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image"},
+                        {"type": "text", "text": prompt},
+                    ],
+                },
+            ])
+        else: # not first time
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": [
+                        {"type": "text", "text": prompt},
+                    ],
+                },
             )
+        
+        prompt = self.processor.apply_chat_template(self.conversation, add_generation_prompt=True)
+        print(prompt)
+        print()
+        inputs = self.processor(images=images, text=[prompt], padding=True, return_tensors="pt").to(self.model.device)
 
-        # print(self.processor.decode(output[0], skip_special_tokens=True))
-        
-        # 5. decode output (with history)
-        output_ids = output[0][input_ids.shape[-1]:] # [0] because its a 2d mat tensor, 
-        answer = self.processor.decode(output_ids, skip_special_tokens=True)
-        
-        return answer
+        with autocast():      
+            with torch.no_grad():
+                output_ids = self.model.generate(
+                    **inputs,
+                    max_new_tokens=1024,
+                    pad_token_id=self.processor.tokenizer.pad_token_id,
+                    )
+    
+        response = self.processor.batch_decode(output_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+        print(response)
+        print()
+        response = response[0][len(prompt):] # need raw string to escape special characters
+
+        self.conversation.append(
+            {
+                "role": "assistant", 
+                "content": [
+                        {"type": "text", "text": response},
+                    ],
+            },
+        )
+        return response
 
 class Idefics2VLM(VLMTemplate):
-
-    """
-    
-    This is for the pair of images
-    
-    """
-
     def __init__(self, name: str = None):
         super().__init__(name=name)
         
@@ -387,7 +325,7 @@ class PhiVisionInstruct(VLMTemplate):
 
         self.conversation.append(
             {
-                "role": "assitant", 
+                "role": "assistant", 
                 "content": response,
             },
         )
@@ -460,12 +398,9 @@ class Phi4VisionInstruct(VLMTemplate):
 
 
 class SpaceLLaVA(VLMTemplate):
-
     def __init__(self, path="/bask/projects/j/jlxi8926-auto-sum/kdeng/doppelgangers/data/doppelgangers_dataset/doppelgangers/"):
         super().__init__()
-
         self.model_name = "remyxai/SpaceLLaVA"
-        
         self.model_path = path
         
     def __call__(self):
@@ -614,13 +549,120 @@ class QwenVisionInstruct(VLMTemplate):
 
         self.conversation.append(
             {
-                "role": "assitant", 
+                "role": "assistant", 
                 "content": response,
             },
         )
-        del inputs, generated_ids, generated_ids_trimmed
         torch.cuda.empty_cache()
         return response
+    
+
+class GPTVisionInstruct(VLMTemplate):
+    def __init__(self, name):
+        super().__init__(name=name)
+        self.conversation = []
+        self.prompt_tokens = []
+        self.completion_tokens = []
         
-if __name__ == "__main__":
-    pass
+    def _load_weight(self):
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    def _clear_history(self):
+        self.conversation = []
+
+    def _calculate_input_tokens_cost(self, num_tokens: int) -> float:
+        cost_map = {
+            "gpt-4o-mini": 0.15, # 0.15$ per million tokens
+            "gpt-4o": 2.5, # 2.5$ per million tokens
+            "gpt-4-turbo": 10, # 10$ per million tokens
+        }
+        assert self.model_name in cost_map, self.logger.error(f"Model {self.model_name} not found in input cost map")
+        return cost_map[self.model_name] * num_tokens / 1e6
+    
+    def _calculate_output_tokens_cost(self, num_tokens: int) -> float:
+        cost_map = {
+            "gpt-4o-mini": 0.6, # 0.15$ per million tokens
+            "gpt-4o": 10, # 2.5$ per million tokens
+            "gpt-4-turbo": 30, # 30$ per million tokens
+        }
+        assert self.model_name in cost_map, self.logger.error(f"Model {self.model_name} not found in output cost map")
+        return cost_map[self.model_name] * num_tokens / 1e6
+
+    def _print_tokens_usage(self, completiion: Any) -> None:
+        """not used"""
+        self.logger.info(f"🤡 Prompt Tokens Usage: {completiion.usage.prompt_tokens}")
+        self.logger.info(f"👾 Prompt Tokens Cost: {self._calculate_input_tokens_cost(completiion.usage.prompt_tokens)}")
+        self.logger.info(f"🤡 Completion Tokens Usage: {completiion.usage.completion_tokens}")
+        self.logger.info(f"🤡 Completion Reasoning Tokens Usage: {completiion.usage.completion_tokens_details.reasoning_tokens}")
+        self.logger.info(f"👾 Completion Tokens Cost: {self._calculate_output_tokens_cost(completiion.usage.completion_tokens)}")
+        self.logger.info(f"🤡 Total Tokens Usage: {completiion.usage.total_tokens}")
+
+    def _collect_completions(self, completiion: Any) -> None:
+        self.prompt_tokens.append(completiion.usage.prompt_tokens)
+        self.completion_tokens.append(completiion.usage.completion_tokens)
+
+    def print_total_tokens_usage(self) -> None:
+        self.logger.info(f"🤡 Total Prompt Tokens Usage: {sum(self.prompt_tokens)}")
+        self.logger.info(f"👾 Total Prompt Tokens Cost: {self._calculate_input_tokens_cost(sum(self.prompt_tokens))}")
+        self.logger.info(f"🤡 Total Completion Tokens Usage: {sum(self.completion_tokens)}")
+        self.logger.info(f"👾 Total Completion Tokens Cost: {self._calculate_output_tokens_cost(sum(self.completion_tokens))}")
+        self.logger.info(f"👾 Total Cost: {self._calculate_input_tokens_cost(sum(self.prompt_tokens)) + self._calculate_output_tokens_cost(sum(self.completion_tokens))}")
+        
+    def pipeline(self, images: Tuple[Any, Any], prompt: str) -> str:
+        images = [self.Tensor2PIL(image) for image in images]
+        # Convert images to base64
+        base64_images = []
+        for image in images:
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG")
+            base64_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
+            base64_images.append(base64_image)
+
+        if len(self.conversation) == 0: # first time
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": [
+                        {
+                            "type": "text", 
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url", 
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_images[0]}",
+                            },
+                        },
+                        {
+                            "type": "image_url", 
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_images[1]}",
+                            },
+                        },
+                    ],
+                },
+            )
+        else: # not first time
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": prompt,
+                },
+            )
+
+        completiion = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=self.conversation,
+            max_tokens=1024,
+        )
+        self._collect_completions(completiion)
+        # self._print_tokens_usage(completiion)
+        response = completiion.choices[0].message.content
+
+        self.conversation.append(
+            {
+                "role": "assistant", 
+                "content": response,
+            },
+        )
+        return response
