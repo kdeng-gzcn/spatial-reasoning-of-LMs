@@ -1,3 +1,4 @@
+import argparse
 import os
 from pathlib import Path
 import re
@@ -10,9 +11,29 @@ import pandas as pd
 import jsonlines
 import tqdm
 
-orgin_data_dir = "./data/RGBD_7_Scenes/"
-rebuild_data_dir = f"./benchmark/Rebuild_7_Scenes_{int(time.time())}/"
-os.makedirs(rebuild_data_dir, exist_ok=True)
+def parse_args():
+    parser = argparse.ArgumentParser(description="Generate benchmark dataset for RGBD 7 Scenes.")
+
+    parser.add_argument("--data_dir", type=str, default="data/RGBD_7_Scenes"),
+    
+    parser.add_argument("--dataset_dir", type=str, default="data/RGBD_7_Scenes",
+                        help="Path to the input dataset directory.")
+    parser.add_argument("--output_dir", type=str, default=None,
+                        help="Path to the output rebuilt dataset directory. Defaults to a timestamped folder.")
+    parser.add_argument("--max_interval", type=int, default=125,
+                        help="Maximum frame interval for valid pairs.")
+    parser.add_argument("--thresholds", type=str, default=None,
+                        help="Custom thresholds for relative pose in JSON format. Example: '{\"tx\": [0.1, 0.5], \"ty\": [0.1, 0.4]}'")
+    parser.add_argument("--progress", action="store_true",
+                        help="Enable progress bars for processing.")
+    
+    return parser.parse_args()
+
+args = parse_args()
+
+DATASET_DIR = Path(args.dataset_dir)
+REBUILT_DATA_DIR = Path(f"benchmark/RGBD_7_Scenes_Rebuilt_{int(time.time())}")
+os.makedirs(REBUILT_DATA_DIR, exist_ok=True)
 
 num_pos_count = {
     "tx": 0,
@@ -46,52 +67,36 @@ threshold_relative_pose = {
 global_csv_data = []
 global_json_data = []
 
-# Initialize a total progress bar
-progress_bar = tqdm.tqdm(total=None, desc="Total Progress", unit="pair")
+def _create_bar(desc: str, unit: str = "pair") -> tqdm.tqdm:
+    return tqdm.tqdm(total=None, desc=desc, unit=unit)
 
-# Initialize progress bars for each dimension (positive and negative)
-bar_tx_pos = tqdm.tqdm(total=None, desc="tx (pos)", unit="pair")
-bar_tx_neg = tqdm.tqdm(total=None, desc="tx (neg)", unit="pair")
-
-bar_ty_pos = tqdm.tqdm(total=None, desc="ty (pos)", unit="pair")
-bar_ty_neg = tqdm.tqdm(total=None, desc="ty (neg)", unit="pair")
-
-bar_tz_pos = tqdm.tqdm(total=None, desc="tz (pos)", unit="pair")
-bar_tz_neg = tqdm.tqdm(total=None, desc="tz (neg)", unit="pair")
-
-bar_theta_pos = tqdm.tqdm(total=None, desc="theta (pos)", unit="pair")
-bar_theta_neg = tqdm.tqdm(total=None, desc="theta (neg)", unit="pair")
-
-bar_phi_pos = tqdm.tqdm(total=None, desc="phi (pos)", unit="pair")
-bar_phi_neg = tqdm.tqdm(total=None, desc="phi (neg)", unit="pair")
-
-bar_psi_pos = tqdm.tqdm(total=None, desc="psi (pos)", unit="pair")
-bar_psi_neg = tqdm.tqdm(total=None, desc="psi (neg)", unit="pair")
-
-# Create a dictionary to store the positive and negative progress bars
 bar_dict = {
-    "tx_pos": bar_tx_pos,
-    "tx_neg": bar_tx_neg,
-    "ty_pos": bar_ty_pos,
-    "ty_neg": bar_ty_neg,
-    "tz_pos": bar_tz_pos,
-    "tz_neg": bar_tz_neg,
-    "theta_pos": bar_theta_pos,
-    "theta_neg": bar_theta_neg,
-    "phi_pos": bar_phi_pos,
-    "phi_neg": bar_phi_neg,
-    "psi_pos": bar_psi_pos,
-    "psi_neg": bar_psi_neg,
+    "tx_pos": _create_bar("tx (pos)"),
+    "tx_neg": _create_bar("tx (neg)"),
+    "ty_pos": _create_bar("ty (pos)"),
+    "ty_neg": _create_bar("ty (neg)"),  
+    "tz_pos": _create_bar("tz (pos)"),
+    "tz_neg": _create_bar("tz (neg)"),
+    "theta_pos": _create_bar("theta (pos)"),
+    "theta_neg": _create_bar("theta (neg)"),
+    "phi_pos": _create_bar("phi (pos)"),
+    "phi_neg": _create_bar("phi (neg)"),
+    "psi_pos": _create_bar("psi (pos)"),
+    "psi_neg": _create_bar("psi (neg)"),
 }
 
+# Initialize a total progress bar
+progress_bar = _create_bar("Total Progress")
+
 scene_bar = tqdm.tqdm(
-    total=len([f for f in os.listdir(orgin_data_dir) if os.path.isdir(os.path.join(orgin_data_dir, f))]), 
+    total=len([f for f in os.listdir(DATASET_DIR) if os.path.isdir(os.path.join(DATASET_DIR, f))]), 
     desc="Scene",
 )
 
 # Iterate through each scene folder
-for scene in os.listdir(orgin_data_dir):
-    scene_path = os.path.join(orgin_data_dir, scene)
+for scene in os.listdir(DATASET_DIR):
+    scene_path = os.path.join(DATASET_DIR, scene)
+    scene_path = DATASET_DIR / scene
     if not os.path.isdir(scene_path):
         continue
 
@@ -214,7 +219,7 @@ for scene in os.listdir(orgin_data_dir):
                 
                 """
 
-                pair_path = os.path.join(rebuild_data_dir, f"{df}_Significant", f"{scene}", f"{seq}", f"{frame1_num:06d}-{frame2_num:06d}")
+                pair_path = os.path.join(REBUILT_DATA_DIR, f"{df}_significant", f"{scene}", f"{seq}", f"{frame1_num:06d}-{frame2_num:06d}")
 
                 if os.path.exists(pair_path):
                     continue
@@ -288,7 +293,6 @@ for scene in os.listdir(orgin_data_dir):
                 pair_json_path = os.path.join(pair_path, "metadata.json")
 
                 with open(pair_json_path, "w") as f:
-                    
                     json.dump(info, f, indent=4)
 
                 global_csv_data.append(info)
@@ -308,18 +312,18 @@ for bar in bar_dict.values():
     bar.close()
 
 # csv
-global_csv_path = os.path.join(rebuild_data_dir, "global_metadata.csv")
+global_csv_path = os.path.join(REBUILT_DATA_DIR, "global_metadata.csv")
 global_csv_df = pd.DataFrame(global_csv_data)
 global_csv_df.to_csv(global_csv_path, index=False)
 
 # json
-global_json_path = os.path.join(rebuild_data_dir, "global_metadata.json")
+global_json_path = os.path.join(REBUILT_DATA_DIR, "global_metadata.json")
 with open(global_json_path, "w") as f:
     
     json.dump(global_json_data, f, indent=4)
 
 # jsonlines
-global_jsonl_path = os.path.join(rebuild_data_dir, "global_metadata.jsonl")
+global_jsonl_path = os.path.join(REBUILT_DATA_DIR, "global_metadata.jsonl")
 with jsonlines.open(global_jsonl_path, mode="w") as writer:
     for item in global_json_data:
         writer.write(item)
