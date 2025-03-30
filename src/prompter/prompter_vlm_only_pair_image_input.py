@@ -1,7 +1,7 @@
+import yaml
 import numpy as np
 
 from src.prompter.prompter_template import PromptTemplate
-from src.utils import *
 from src.vlm_only_prompts import (
     task_prompt_individual_vlm_zero_shot, 
     addtional_info_zero_shot, 
@@ -14,23 +14,18 @@ from src.vlm_only_prompts import (
 class TaskPrompterVLMOnly(PromptTemplate):
     def __init__(self, **kwargs):
         super().__init__() # seed
+        self.options_config = yaml.safe_load(open("src/vlm_only_options.yaml", "r"))
         self.split = kwargs.get("split")
+        self.options_config = self.options_config.get("directions").get(self.split)
         self.is_shuffle = kwargs.get("is_shuffle")
         self.prompt_type = kwargs.get("prompt_type")
 
-        self.short_dict = {
-            0: "unable to judge",
-            1: "leftward",
-            2: "rightward",
-            3: "no movement",
-        }
+        self.short_dict = self.options_config.get("short_dict")
+        self.detailed_dict = self.options_config.get("detailed_dict")
 
-        self.detailed_dict = {
-            "leftward": "Leftward rotation – The camera rotated leftward horizontally.",
-            "no movement": "No movement – The two images are completely identical with no even slight changes. This option should only be selected if there is absolute certainty that no movement at all as occurred.",
-            "unable to judge": "Unable to judge – This option should only be selected in cases where the images are severely corrupted, fail to load, or lack sufficient visual information to determine movement.",
-            "rightward": "Rightward rotation – The camera rotated rightward horizontally.",
-        }
+        self.addtional_info_zero_shot = addtional_info_zero_shot.format(additional_info=self.options_config.get("additional_info"))
+        self.CoT_zero_shot = CoT_zero_shot.format(CoT_reasoning_skills=self.options_config.get("CoT"))
+        self.VoT_zero_shot = VoT_zero_shot.format(VoT_reasoning_skills=self.options_config.get("VoT"))
 
     def _shuffle_dict(self, dict: dict) -> dict:
         if self.is_shuffle:
@@ -53,15 +48,15 @@ class TaskPrompterVLMOnly(PromptTemplate):
         if self.prompt_type == "zero-shot":
             prompt = prompt
         elif self.prompt_type == "add-info-zero-shot":
-            prompt += addtional_info_zero_shot
+            prompt += self.addtional_info_zero_shot
         elif self.prompt_type == "VoT-zero-shot":
-            prompt += addtional_info_zero_shot + VoT_zero_shot
+            prompt += self.addtional_info_zero_shot + self.VoT_zero_shot
         elif self.prompt_type == "CoT-zero-shot":
-            prompt += addtional_info_zero_shot + CoT_zero_shot
+            prompt += self.addtional_info_zero_shot + self.CoT_zero_shot + CoT_prompt
         elif self.prompt_type == "CoT-prompt":
-            prompt += addtional_info_zero_shot + CoT_prompt
+            prompt += self.addtional_info_zero_shot + CoT_prompt
         elif self.prompt_type == "VoT-prompt":
-            prompt += addtional_info_zero_shot + VoT_zero_shot + VoT_promopt
+            prompt += self.addtional_info_zero_shot + self.VoT_zero_shot + VoT_promopt
 
         return prompt, option_map
     

@@ -1,0 +1,90 @@
+directions:
+  pitch:
+    short_dict:
+      0: "unable to judge"
+      1: "upward"
+      2: "downward"
+      3: "no movement"
+    detailed_dict:
+      upward: "Upward rotation – The camera rotated upward vertically."
+      downward: "Downward rotation – The camera rotated downward vertically."
+      no movement: "No movement – The two images are completely identical with no even slight changes."
+      unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
+    additional_info: |
+      Additional Context:
+      - This dataset only contains **camera pitch rotations (upward or downward)** of approximately **15 degrees**.
+
+  yaw:
+    short_dict:
+      0: "unable to judge"
+      1: "leftward"
+      2: "rightward"
+      3: "no movement"
+    detailed_dict:
+      leftward: "Leftward rotation – The camera rotated leftward horizontally."
+      rightward: "Rightward rotation – The camera rotated rightward horizontally."
+      no movement: "No movement – The two images are completely identical with no even slight changes."
+      unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
+    additional_info: |
+      Additional Context:
+      - This dataset only contains **camera yaw rotations (leftward or rightward)** of approximately **15 degrees**.
+
+  roll:
+    short_dict:
+      0: "unable to judge"
+      1: "clockwise"
+      2: "counterclockwise"
+      3: "no movement"
+    detailed_dict:
+      clockwise: "Clockwise rotation – The camera rotated clockwise around its axis."
+      counterclockwise: "Counterclockwise rotation – The camera rotated counterclockwise around its axis."
+      no movement: "No movement – The two images are completely identical with no even slight changes."
+      unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
+    additional_info: |
+      Additional Context:
+      - This dataset only contains **camera roll rotations (clockwise or counterclockwise)** of approximately **15 degrees**.
+
+  forward_backward:
+    short_dict:
+      0: "unable to judge"
+      1: "forward"
+      2: "backward"
+      3: "no movement"
+    detailed_dict:
+      forward: "Forward movement – The camera moved forward along its axis."
+      backward: "Backward movement – The camera moved backward along its axis."
+      no movement: "No movement – The two images are completely identical with no even slight changes."
+      unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
+    additional_info: |
+      Additional Context:
+      - This dataset only contains **camera translations (forward or backward)** of approximately **15 units**.
+
+  left_right:
+    short_dict:
+      0: "unable to judge"
+      1: "leftward"
+      2: "rightward"
+      3: "no movement"
+    detailed_dict:
+      leftward: "Leftward translation – The camera moved leftward horizontally."
+      rightward: "Rightward translation – The camera moved rightward horizontally."
+      no movement: "No movement – The two images are completely identical with no even slight changes."
+      unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
+    additional_info: |
+      Additional Context:
+      - This dataset only contains **camera translations (leftward or rightward)** of approximately **15 units**.
+
+  up_down:
+    short_dict:
+      0: "unable to judge"
+      1: "upward"
+      2: "downward"
+      3: "no movement"
+    detailed_dict:
+      upward: "Upward translation – The camera moved upward vertically."
+      downward: "Downward translation – The camera moved downward vertically."
+      no movement: "No movement – The two images are completely identical with no even slight changes."
+      unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
+    additional_info: |
+      Additional Context:
+      - This dataset only contains **camera translations (upward or downward)** of approximately **15 units**.

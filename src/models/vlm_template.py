@@ -11,8 +11,8 @@ from torchvision.transforms import ToPILImage
 
 from openai import OpenAI
 
-# from llama_cpp import Llama
-# from llama_cpp.llama_chat_format import Llava15ChatHandler
+from llama_cpp import Llama
+from llama_cpp.llama_chat_format import Llava15ChatHandler
 
 from transformers import (
     AutoProcessor, AutoModelForCausalLM,
@@ -602,11 +602,11 @@ class GPTVisionInstruct(VLMTemplate):
         self.completion_tokens.append(completiion.usage.completion_tokens)
 
     def print_total_tokens_usage(self) -> None:
-        self.logger.info(f"🤡 Total Prompt Tokens Usage: {sum(self.prompt_tokens)}")
-        self.logger.info(f"👾 Total Prompt Tokens Cost: {self._calculate_input_tokens_cost(sum(self.prompt_tokens))}")
-        self.logger.info(f"🤡 Total Completion Tokens Usage: {sum(self.completion_tokens)}")
-        self.logger.info(f"👾 Total Completion Tokens Cost: {self._calculate_output_tokens_cost(sum(self.completion_tokens))}")
-        self.logger.info(f"👾 Total Cost: {self._calculate_input_tokens_cost(sum(self.prompt_tokens)) + self._calculate_output_tokens_cost(sum(self.completion_tokens))}")
+        self.logger.info(f"😚💦💬 Total Prompt Tokens Usage: {sum(self.prompt_tokens)}")
+        self.logger.info(f"💰 Total Prompt Tokens Cost: {self._calculate_input_tokens_cost(sum(self.prompt_tokens))}")
+        self.logger.info(f"🤖💬 Total Completion Tokens Usage: {sum(self.completion_tokens)}")
+        self.logger.info(f"💰 Total Completion Tokens Cost: {self._calculate_output_tokens_cost(sum(self.completion_tokens))}")
+        self.logger.info(f"🤡🤡🤡 Total Cost: {self._calculate_input_tokens_cost(sum(self.prompt_tokens)) + self._calculate_output_tokens_cost(sum(self.completion_tokens))}")
         
     def pipeline(self, images: Tuple[Any, Any], prompt: str) -> str:
         images = [self.Tensor2PIL(image) for image in images]

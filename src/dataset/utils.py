@@ -2,17 +2,7 @@ from src.dataset import (
     SevenScenesImageDataset,
 )
 
-def load_dataset(dataset_name, data_root_dir, split=None):
-
-    """
-    Loads a dataset by name.
-
-    Args:
-        dataset_name (str): Name of the dataset to load.
-        split (str): Split of the dataset to load.
-        name (str, optional): The dataset configuration to load.
-    """
-
+def load_dataset(dataset_name: str, data_root_dir: str, split: str):
     dataset_mapping = {
         "7 Scenes": SevenScenesImageDataset,
     }

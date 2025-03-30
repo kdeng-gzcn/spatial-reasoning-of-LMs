@@ -1,0 +1,9 @@
+threshold_relative_pose:
+  tx: [0.15, 0.4]
+  ty: [0.1, 0.3]
+  tz: [0.15, 0.4]
+  theta: [3, 10]
+  phi: [5, 15]
+  psi: [3, 10]
+
+max_interval: 125

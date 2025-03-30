@@ -12,26 +12,27 @@ conda activate VLM
 
 # VLM_ID=microsoft/Phi-3.5-vision-instruct
 # VLM_ID=Qwen/Qwen2.5-VL-7B-Instruct
-VLM_ID=gpt-4-turbo
-RESULT_DIR=result/exp_vlm_only_reasoning_gpt_4_turbo
+VLM_ID=gpt-4o
+SPLIT="phi"
+RESULT_DIR=result/test_new_code/${VLM_ID}_${SPLIT}
+PROMPT_TYPE=VoT-prompt
 
-# PROMPT_TYPE=VoT-prompt
-# python experiments/experiment_1_individual_vlm.py \
-#     --vlm_id ${VLM_ID} \
-#     --data_dir "benchmark/RGBD_7_Scenes_Rebuilt" \
-#     --result_dir ${RESULT_DIR} \
-#     --split "phi" \
-#     --is_shuffle \
-#     --prompt_type ${PROMPT_TYPE}
+python experiments/experiment_1_individual_vlm.py \
+    --vlm_id ${VLM_ID} \
+    --data_dir "benchmark/RGBD_7_Scenes_Rebuilt" \
+    --result_dir ${RESULT_DIR} \
+    --split ${SPLIT} \
+    --is_shuffle \
+    --prompt_type ${PROMPT_TYPE}
 
-for PROMPT_TYPE in "zero-shot" "add-info-zero-shot" "CoT-zero-shot" "VoT-zero-shot" "CoT-prompt" "VoT-prompt"
-do
-    echo "Running experiment with prompt_type=${PROMPT_TYPE}"
-    python experiments/experiment_1_individual_vlm.py \
-        --vlm_id ${VLM_ID} \
-        --data_dir "benchmark/RGBD_7_Scenes_Rebuilt" \
-        --result_dir ${RESULT_DIR} \
-        --split "phi" \
-        --is_shuffle \
-        --prompt_type ${PROMPT_TYPE}
-done
+# for PROMPT_TYPE in "zero-shot" "add-info-zero-shot" "CoT-zero-shot" "VoT-zero-shot"
+# do
+#     echo "Running experiment with prompt_type=${PROMPT_TYPE}"
+#     python experiments/experiment_1_individual_vlm.py \
+#         --vlm_id ${VLM_ID} \
+#         --data_dir "benchmark/RGBD_7_Scenes_Rebuilt" \
+#         --result_dir ${RESULT_DIR} \
+#         --split "phi" \
+#         --is_shuffle \
+#         --prompt_type ${PROMPT_TYPE}
+# done

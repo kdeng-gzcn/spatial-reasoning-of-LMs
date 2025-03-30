@@ -6,16 +6,16 @@ import torchvision.io as io
 from torch.utils.data import Dataset
 
 class SevenScenesImageDataset(Dataset):
-    def __init__(self, data_root_dir=None, split=None):
+    def __init__(self, data_root_dir: str, split: str) -> None:
         self.data_root_dir = data_root_dir
-        self.subset = split
+        self.split = split
 
         self.data = []
         self._load_image_pairs(self.data_root_dir)
 
-    def _load_image_pairs(self, data_dir=None):
+    def _load_image_pairs(self, data_dir: str) -> None:
         assert isinstance(data_dir, str), "Error in data_dir"
-        if self.subset == "all":
+        if self.split == "all":
             for dof in os.listdir(self.data_root_dir):
                 dof_path = os.path.join(self.data_root_dir, dof)
                 if not os.path.isdir(dof_path):
@@ -38,8 +38,8 @@ class SevenScenesImageDataset(Dataset):
 
                             self.data.append(pair_path)
 
-        elif self.subset in ["tx", "ty", "tz", "theta", "phi", "psi"]:
-            subset_path = os.path.join(self.data_root_dir, f"{self.subset}_significant")
+        elif self.split in ["tx", "ty", "tz", "theta", "phi", "psi"]:
+            subset_path = os.path.join(self.data_root_dir, f"{self.split}_significant")
             for scene in os.listdir(subset_path):
                 scene_path = os.path.join(subset_path, scene)
                 if not os.path.isdir(scene_path):
@@ -58,7 +58,7 @@ class SevenScenesImageDataset(Dataset):
                         self.data.append(pair_path)
 
         else:
-            print(f"{self.subset} Not Recognized")
+            print(f"{self.split} Not Recognized")
 
     def __len__(self):
         return len(self.data)
@@ -95,7 +95,4 @@ class SevenScenesImageDataset(Dataset):
         }
 
         return item
-
-if __name__ == "__main__":
-    pass
         

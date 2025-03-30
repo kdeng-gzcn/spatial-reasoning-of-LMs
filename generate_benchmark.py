@@ -10,30 +10,24 @@ import numpy as np
 import pandas as pd
 import jsonlines
 import tqdm
+import yaml
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Generate benchmark dataset for RGBD 7 Scenes.")
-
-    parser.add_argument("--data_dir", type=str, default="data/RGBD_7_Scenes"),
-    
-    parser.add_argument("--dataset_dir", type=str, default="data/RGBD_7_Scenes",
-                        help="Path to the input dataset directory.")
-    parser.add_argument("--output_dir", type=str, default=None,
-                        help="Path to the output rebuilt dataset directory. Defaults to a timestamped folder.")
-    parser.add_argument("--max_interval", type=int, default=125,
-                        help="Maximum frame interval for valid pairs.")
-    parser.add_argument("--thresholds", type=str, default=None,
-                        help="Custom thresholds for relative pose in JSON format. Example: '{\"tx\": [0.1, 0.5], \"ty\": [0.1, 0.4]}'")
-    parser.add_argument("--progress", action="store_true",
-                        help="Enable progress bars for processing.")
-    
+    parser.add_argument("--config_path", type=str, default="config_benchmark.yaml", help="Path to the configuration file.")
+    parser.add_argument("--dataset_dir", type=str, default="data/RGBD_7_Scenes", help="Path to the dataset directory.")
+    parser.add_argument("--output_dir", type=str, default=f"benchmark/RGBD_7_Scenes_Rebuilt_{int(time.time())}", help="Path to the output directory.")
     return parser.parse_args()
 
 args = parse_args()
 
+CONFIG = yaml.safe_load(open(args.config_path, "r"))
 DATASET_DIR = Path(args.dataset_dir)
-REBUILT_DATA_DIR = Path(f"benchmark/RGBD_7_Scenes_Rebuilt_{int(time.time())}")
-os.makedirs(REBUILT_DATA_DIR, exist_ok=True)
+REBUILT_DATA_DIR = Path(args.output_dir)
+REBUILT_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+max_interval = CONFIG["max_interval"]
+threshold_relative_pose = CONFIG["threshold_relative_pose"]
 
 num_pos_count = {
     "tx": 0,
@@ -51,17 +45,6 @@ num_neg_count = {
     "theta": 0,
     "phi": 0,
     "psi": 0,
-}
-
-max_interval = 125
-
-threshold_relative_pose = {
-    "tx": [0.15, 0.6],
-    "ty": [0.1, 0.4],
-    "tz": [0.15, 0.6],
-    "theta": [3, 15],
-    "phi": [5, 20],
-    "psi": [3, 15],
 }
 
 global_csv_data = []
@@ -273,7 +256,7 @@ for scene in os.listdir(DATASET_DIR):
                     "tz_text": "forward" if t[2] > 0 else "backward",
                     "theta_text": "upward" if theta > 0 else "downward",
                     "phi_text": "rightward" if phi > 0 else "leftward",
-                    "psi_text": "head towards right" if psi > 0 else "head towards left",
+                    "psi_text": "clockwise" if psi > 0 else "counterclockwise",
                     "significance": df,
                 }
 
@@ -319,7 +302,6 @@ global_csv_df.to_csv(global_csv_path, index=False)
 # json
 global_json_path = os.path.join(REBUILT_DATA_DIR, "global_metadata.json")
 with open(global_json_path, "w") as f:
-    
     json.dump(global_json_data, f, indent=4)
 
 # jsonlines

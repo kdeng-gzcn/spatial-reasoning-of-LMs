@@ -4,11 +4,12 @@ import logging
 import sys
 sys.path.append("")
 
+import dotenv
+
 from src.logging.logging_config import setup_logging
 from src.vlm_only_reasoning.utils import load_process
 
 def parse_args():
-
     parser = argparse.ArgumentParser(
         description="Run Baseline Experiment pipeline"
         )
@@ -55,7 +56,8 @@ def parse_args():
         "--prompt_type", 
         type=str,
         choices=[
-            "zero-shot", "add-info-zero-shot", "VoT-zero-shot", "CoT-zero-shot"
+            "zero-shot", "add-info-zero-shot", "VoT-zero-shot", "CoT-zero-shot",
+            "CoT-prompt", "VoT-prompt",
             ],
         help="prompt type, with zero-shot, in-context, few-shot",
         required=True,
@@ -67,26 +69,23 @@ def main(args):
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    logger.info(f"VLM_ID: {args.vlm_id}")
-    logger.info(f"DataPath: {args.data_dir}")
-    logger.info(f"Split: {args.split}")
-    logger.info(f"ResultPath: {args.result_dir}")
-    logger.info(f"is_shuffle: {args.is_shuffle}")
-    logger.info(f"prompt_type: {args.prompt_type}")
-
     kwargs = {
-        "VLM_id": args.vlm_id,
-        "datapath": args.data_dir,
-        "subset": args.split,
-        "result dir": args.result_dir,
+        "vlm_id": args.vlm_id,
+        "data_dir": args.data_dir,
+        "split": args.split,
+        "result_dir": args.result_dir,
         "is_shuffle": args.is_shuffle,
         "prompt_type": args.prompt_type,
     }
+
+    for key, value in kwargs.items():
+        logger.info(f"{key}: {value}")
 
     pipeline = load_process(**kwargs)
     pipeline()
 
 
 if __name__ == "__main__":
+    dotenv.load_dotenv()
     args = parse_args()  
     main(args)

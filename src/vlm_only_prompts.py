@@ -17,53 +17,31 @@ Example Response:
 
 addtional_info_zero_shot = """
 Additional Context:
-- This dataset only contains **camera yaw rotations (leftward or rightward)**  of approximately **15 degrees** between the source and target images. This constraint simplifies the problem: there is no combination of multiple movements or complex transformations.
 - The dataset consists of pairs of images, each pair showing the same scene from slightly different perspectives due to the camera movement. It is essential to identity the slight changes in object positions in the target image compared to the source image.
-"""
-
-CoT_prompt = """
-Let's think step by step.
-"""
-
-VoT_promopt = """
-Visualize each reasoning step.
+- {additional_info} This constraint simplifies the problem: there is no combination of multiple movements or complex transformations.
 """
 
 CoT_zero_shot = """
 Here are some reasoning skills:
 Step1: You need to carefully identify the main objects that occurs in both images. 
 Step2: You need to identify how the objects have moved in the target image compared to the source image.
-- Case1: The camera rotated leftward horizontally:
-    if the main objects that you chose in the source image is on the left/middle/right side of the frame and the target image shows the object comes to the middle/right/more right side of the frame, then the camera has rotated left.
+{CoT_reasoning_skills}
 
-- Case2: The camera rotated rightward horizontally:
-    if the main objects that you chose in the source image is on the left/middle/right side of the frame and the target image shows the object comes to the left/middle/more left side of the frame, the camera has rotated right.
+Let's think step by step.
 """
 
 VoT_zero_shot = """
 Here are some reasoning skills:
 You need to carefully identify the main objects (represented by ⭕️) that occurs in both images. Then, you can determine the direction of the camera movement based on how the objects have moved in the target image compared to the source image.
-- Case1: The camera rotated leftward horizontally:
-    if the images look like:
-    --------         --------
-    |  ⭕️   | ---->  |    ⭕️ |
-    --------         --------
-    (source)         (target)
+{VoT_reasoning_skills}
 
-    which means the camera has the movement:
-    ⭕️    leftward     ⭕️
-    |    --------->   \ 
-    📷                 📷
+Visualize each reasoning step.
+"""
 
-- Case2: The camera rotated rightward horizontally:
-    if the images look like:
-    --------         --------
-    |    ⭕️ | ---->  | ⭕️    |
-    --------         --------
-    (source)         (target)
+CoT_prompt = """
 
-    which means the camera has the movement:
-    ⭕️    rightward    ⭕️
-    |    --------->     /
-    📷                 📷
+"""
+
+VoT_promopt = """
+
 """
