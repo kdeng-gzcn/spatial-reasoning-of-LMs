@@ -158,12 +158,12 @@ directions:
   tx:
     short_dict:
       0: "unable to judge"
-      1: "leftward"
-      2: "rightward"
+      1: "left"
+      2: "right"
       3: "no movement"
     detailed_dict:
-      leftward: "Leftward translation – The camera moved leftward horizontally."
-      rightward: "Rightward translation – The camera moved rightward horizontally."
+      left: "Leftward translation – The camera moved leftward horizontally."
+      right: "Rightward translation – The camera moved rightward horizontally."
       no movement: "No movement – The two images are completely identical with no even slight changes."
       unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
     additional_info: |
@@ -200,12 +200,12 @@ directions:
   ty:
     short_dict:
       0: "unable to judge"
-      1: "upward"
-      2: "downward"
+      1: "up"
+      2: "down"
       3: "no movement"
     detailed_dict:
-      upward: "Upward translation – The camera moved upward vertically."
-      downward: "Downward translation – The camera moved downward vertically."
+      up: "Upward translation – The camera moved upward vertically."
+      down: "Downward translation – The camera moved downward vertically."
       no movement: "No movement – The two images are completely identical with no even slight changes."
       unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
     additional_info: |

@@ -6,7 +6,7 @@ from PIL import Image
 import logging
 
 import torch
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 from torchvision.transforms import ToPILImage
 
 from openai import OpenAI
@@ -16,10 +16,9 @@ from llama_cpp.llama_chat_format import Llava15ChatHandler
 
 from transformers import (
     AutoProcessor, AutoModelForCausalLM,
-    AutoModelForImageTextToText,
     LlavaNextProcessor, LlavaNextForConditionalGeneration,
     Idefics2Processor, Idefics2ForConditionalGeneration,
-    Qwen2_5_VLForConditionalGeneration,
+    Qwen2_5_VLForConditionalGeneration, # newest transformers
 )
 
 from qwen_vl_utils import process_vision_info
@@ -115,6 +114,7 @@ class LlavaNextInstruct(VLMTemplate):
         )
         return response
 
+
 class Idefics2VLM(VLMTemplate):
     def __init__(self, name: str = None):
         super().__init__(name=name)
@@ -175,6 +175,7 @@ class Idefics2VLM(VLMTemplate):
         # generated_text = processor.batch_decode(generated_text, skip_special_tokens=True)[0]
         
         return answer
+
 
 class Phi3VLM(VLMTemplate):
 
@@ -263,7 +264,8 @@ class Phi3VLM(VLMTemplate):
         )[0] 
         
         return answer
-    
+
+
 class PhiVisionInstruct(VLMTemplate):
     """
     histroy func can not be used in the pipeline
@@ -330,7 +332,8 @@ class PhiVisionInstruct(VLMTemplate):
             },
         )
         return response
-    
+
+
 class Phi4VisionInstruct(VLMTemplate):
     """histroy func can not be used in the pipeline"""
     def __init__(self, name: str):
@@ -404,9 +407,7 @@ class SpaceLLaVA(VLMTemplate):
         self.model_path = path
         
     def __call__(self):
-        """
-        This maybe a __call__
-        """
+        """This maybe a __call__"""
         drive_path = self.model_path 
     
         # load pretrained weights
@@ -419,7 +420,6 @@ class SpaceLLaVA(VLMTemplate):
         
         self.model = spacellava
 
-    # for 2 imgs in the same prompt
     def image_to_base64_data_uri(self, image_inputs):
         """
         This function accepts a single image path, a single PIL Image instance, or a list of them.
@@ -437,30 +437,20 @@ class SpaceLLaVA(VLMTemplate):
 
     def convert_image_to_base64(self, image_input):
         """Helper function to convert a single image to base64"""
-        # Check if the input is a file path (string)
         if isinstance(image_input, str):
             with open(image_input, "rb") as img_file:
                 base64_data = base64.b64encode(img_file.read()).decode('utf-8')
-
-        # Check if the input is a PIL Image
         elif isinstance(image_input, Image.Image):
             buffer = io.BytesIO()
             image_input.save(buffer, format="PNG")  # You can change the format if needed
             base64_data = base64.b64encode(buffer.getvalue()).decode('utf-8')
-
         else:
             raise ValueError("Unsupported input type. Input must be a file path or a PIL.Image.Image instance.")
-
         return f"data:image/png;base64,{base64_data}"
         
     def pipeline(self, image=None, prompt: str = None):
-
         image = self.Tensor2PIL(image)
-    
-        # processor
         data_uri = self.image_to_base64_data_uri(image)
-        
-        # messages
         messages = [
             {"role": "system", "content": "You are an assistant who perfectly describes images."},
             {
@@ -471,11 +461,8 @@ class SpaceLLaVA(VLMTemplate):
                 ]
             }
         ]
-        
         results = self.model.create_chat_completion(messages=messages)
-        
         answer = results["choices"][0]["message"]["content"].strip()
-        
         return answer
     
 
@@ -532,7 +519,7 @@ class QwenVisionInstruct(VLMTemplate):
         del image_inputs, video_inputs
         torch.cuda.empty_cache()
 
-        with autocast():      
+        with autocast(device_type="cuda"):      
             with torch.no_grad():
                 generated_ids = self.model.generate(
                     **inputs, 
