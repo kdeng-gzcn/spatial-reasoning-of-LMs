@@ -83,11 +83,11 @@ class MultiAgentsPairImageInputReasoning(MultiAgentsReasoningTemplate):
 
         count = 0
         for batch in dataloader_tqdm:
-            if count >=10:
-                break
-            count += 1
-            
             for item in batch:
+                # if count >=3:
+                #     break
+                # count += 1
+
                 source_image = item["source_image"]
                 target_image = item["target_image"]
                 metadata = item["metadata"]
@@ -107,7 +107,7 @@ class MultiAgentsPairImageInputReasoning(MultiAgentsReasoningTemplate):
                     if idx:
                         if pred["pred text"] != "ask more questions":
                             break
-                        llm_questions_to_vlm = pred["reason"] if pred["reason"] is not "None" else "" + pred["question"] if pred["question"] is not "None" else ""
+                        llm_questions_to_vlm = pred["reason"] if pred["reason"] != "None" else "" + pred["question"] if pred["question"] != "None" else ""
                         if not self.is_vlm_keep_hisroty:
                             llm_questions_to_vlm = self.spatial_question_prompter(llm_questions_to_vlm)
                         self._full_history_append(full_history, metadata, idx+1, "LLM", "VLM", llm_questions_to_vlm)
@@ -124,6 +124,11 @@ class MultiAgentsPairImageInputReasoning(MultiAgentsReasoningTemplate):
 
                     pred = self.parser(llm_reasoning, opt_map)
                     self._reasoning_result_append(reasoning_result, metadata, idx+1, pred)
+        
+        try:
+            self.VLM.print_total_tokens_usage()
+        except:
+            pass
 
         result_root_dir = self._make_results_dir()
         config_json_path = result_root_dir / "config.json"

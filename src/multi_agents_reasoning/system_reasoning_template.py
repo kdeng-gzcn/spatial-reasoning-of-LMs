@@ -40,6 +40,7 @@ class MultiAgentsReasoningTemplate():
         self.LLM._load_weight()
 
         prompter_config = {
+            "split": self.split,
             "prompt_type": self.prompt_type,
             "is_shuffle": self.is_shuffle,
             "is_remove_trap_var": self.is_remove_trap_var,

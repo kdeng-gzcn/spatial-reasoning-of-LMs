@@ -3,6 +3,8 @@ sys.path.append("")
 import argparse
 import logging
 
+import dotenv
+
 from src.logging.logging_config import setup_logging
 from src.multi_agents_reasoning.utils import load_process
 
@@ -103,18 +105,6 @@ def parse_args():
 def main(args):
     setup_logging()
     logger = logging.getLogger(__name__)
-
-    logger.info(f"LLM: {args.llm_id}")
-    logger.info(f"VLM: {args.vlm_id}")
-    logger.info(f"Image Input Type: {args.vlm_image_input_type}")
-    logger.info(f"is_vlm_keep_hisroty: {args.is_vlm_keep_hisroty}")
-    logger.info(f"DataPath: {args.data_dir}")
-    logger.info(f"Split: {args.split}")
-    logger.info(f"ResultPath: {args.result_dir}")
-    logger.info(f"is_shuffle: {args.is_shuffle}")
-    logger.info(f"is_remove_trap_var: {args.is_remove_trap_var}")
-    logger.info(f"prompt_type: {args.prompt_type}")
-    logger.info(f"max_len_of_conv: {args.max_len_of_conv}")
     
     kwargs = {
         "vlm_id": args.vlm_id,
@@ -130,9 +120,14 @@ def main(args):
         "is_vlm_keep_hisroty": args.is_vlm_keep_hisroty,
     }
 
+    for key, value in kwargs.items():
+        logger.info(f"{key}: {value}")
+
     pipeline = load_process(type=args.vlm_image_input_type, **kwargs)
     pipeline()
 
+
 if __name__ == "__main__":
+    dotenv.load_dotenv()
     args = parse_args()
     main(args)

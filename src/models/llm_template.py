@@ -1,7 +1,7 @@
 import os
 
 import torch
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from openai import OpenAI
 
@@ -131,7 +131,7 @@ class QwenInstruct(LLMTemplate):
             add_generation_prompt=True,
         )
         model_inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
-        with autocast():
+        with autocast("cuda"):
             with torch.no_grad():
                 generated_ids = self.model.generate(
                     **model_inputs,
