@@ -1,6 +1,6 @@
 data/
 archive/
-cache/
+.cache/
 benchmark/
 __pycache__
 Server Bash.md
