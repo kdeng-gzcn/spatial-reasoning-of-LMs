@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import yaml
 import numpy as np
 
 from src.prompter.prompter_template import PromptTemplate # no use
@@ -14,58 +15,60 @@ from src.multi_agents_prompts import (
 class TaskPrompterPairImageInput(PromptTemplate):
     def __init__(self, **kwargs):
         super().__init__() # seed 
+        self.options_config = yaml.safe_load(open("src/multi_agents_options.yaml", "r"))
+        self.split = kwargs.get("split")
+        self.options_config = self.options_config.get("directions").get(self.split)
+        self.is_shuffle = kwargs.get("is_shuffle")
         self.prompt_type = kwargs.get("prompt_type")
+        self.is_remove_trap_var = kwargs.get("is_remove_trap_var")
+
+        self.addtional_info_zero_shot = dataset_prior_zero_shot.format(additional_info=self.options_config.get("additional_info"))
 
     def __call__(self) -> str:
         prompt = task_prompt_zero_shot
         if self.prompt_type == "zero-shot":
             prompt = prompt
         elif self.prompt_type == "add-info-zero-shot":
-            prompt += dataset_prior_zero_shot
+            prompt += self.addtional_info_zero_shot
         return prompt
 
 
 class LLMQuestionToVLMPairImageInput(PromptTemplate):
     def __init__(self, **kwargs):
         super().__init__()
+        self.options_config = yaml.safe_load(open("src/multi_agents_options.yaml", "r"))
+        self.split = kwargs.get("split")
+        self.options_config = self.options_config.get("directions").get(self.split)
+        self.is_shuffle = kwargs.get("is_shuffle")
         self.prompt_type = kwargs.get("prompt_type")
+        self.is_remove_trap_var = kwargs.get("is_remove_trap_var")
+
+        self.addtional_info_zero_shot = dataset_prior_zero_shot.format(additional_info=self.options_config.get("additional_info"))
 
     def __call__(self, llm_questions: str) -> str:
         prompt = spatial_understanding_question_prompt_zero_shot.format(llm_questions=llm_questions)
         if self.prompt_type == "zero-shot":
             prompt = prompt
         elif self.prompt_type == "add-info-zero-shot":
-            prompt += dataset_prior_zero_shot
+            prompt += self.addtional_info_zero_shot
         return prompt
 
 
 class VLMAnswerToLLMPairImageInput(PromptTemplate):
     def __init__(self, **kwargs):
         super().__init__() # seed
+        self.options_config = yaml.safe_load(open("src/multi_agents_options.yaml", "r"))
         self.split = kwargs.get("split")
+        self.options_config = self.options_config.get("directions").get(self.split)
         self.is_shuffle = kwargs.get("is_shuffle")
         self.prompt_type = kwargs.get("prompt_type")
         self.is_remove_trap_var = kwargs.get("is_remove_trap_var")
 
-        self.short_dict = {
-            0: "ask more questions",
-            1: "leftward",
-            2: "rightward",
-            3: "no movement",
-        }
+        self.short_dict = self.options_config.get("short_dict")
+        self.short_dict_without_trap = {k: v for k, v in self.short_dict.items() if v != "no movement"}
+        self.detailed_dict = self.options_config.get("detailed_dict")
 
-        self.short_dict_without_trap = {
-            0: "ask more questions",
-            1: "leftward",
-            2: "rightward",
-        }
-
-        self.detailed_dict = {
-            "leftward": "Leftward rotation – The camera rotated leftward horizontally.",
-            "no movement": "No movement – The two images are completely identical with no noticeable changes. This option should only be selected if there is absolute certainty that no movement at all has occurred.",
-            "ask more questions": "Ask more questions – You are not confident to make a decision for now, and you want to ask VLM for more information.",
-            "rightward": "Rightward rotation – The camera rotated rightward horizontally.",
-        }
+        self.addtional_info_zero_shot = dataset_prior_zero_shot.format(additional_info=self.options_config.get("additional_info"))
 
     def _shuffle_dict(self, dict: dict) -> dict:
         if self.is_shuffle:
@@ -95,8 +98,9 @@ class VLMAnswerToLLMPairImageInput(PromptTemplate):
                 opt4=self.detailed_dict[option_map[3]],
             )
         
-        if self.prompt_type == "zero-shot":
-            prompt = prompt # no changes
-        elif self.prompt_type == "add-info-zero-shot":
-            prompt = prompt # no changes
+        # if self.prompt_type == "zero-shot":
+        #     prompt = prompt
+        # elif self.prompt_type == "add-info-zero-shot":
+        #     prompt += self.addtional_info_zero_shot
+            
         return prompt, option_map

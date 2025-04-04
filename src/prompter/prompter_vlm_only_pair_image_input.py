@@ -15,6 +15,7 @@ class TaskPrompterVLMOnly(PromptTemplate):
     def __init__(self, **kwargs):
         super().__init__() # seed
         self.options_config = yaml.safe_load(open("src/vlm_only_options.yaml", "r"))
+        print(self.options_config)
         self.split = kwargs.get("split")
         self.options_config = self.options_config.get("directions").get(self.split)
         self.is_shuffle = kwargs.get("is_shuffle")
@@ -52,11 +53,11 @@ class TaskPrompterVLMOnly(PromptTemplate):
         elif self.prompt_type == "VoT-zero-shot":
             prompt += self.addtional_info_zero_shot + self.VoT_zero_shot
         elif self.prompt_type == "CoT-zero-shot":
-            prompt += self.addtional_info_zero_shot + self.CoT_zero_shot + CoT_prompt
-        elif self.prompt_type == "CoT-prompt":
-            prompt += self.addtional_info_zero_shot + CoT_prompt
-        elif self.prompt_type == "VoT-prompt":
-            prompt += self.addtional_info_zero_shot + self.VoT_zero_shot + VoT_promopt
+            prompt += self.addtional_info_zero_shot + self.CoT_zero_shot
+        # elif self.prompt_type == "CoT-prompt":
+        #     prompt += self.addtional_info_zero_shot + CoT_prompt
+        # elif self.prompt_type == "VoT-prompt":
+        #     prompt += self.addtional_info_zero_shot + self.VoT_zero_shot + VoT_promopt
 
         return prompt, option_map
     
