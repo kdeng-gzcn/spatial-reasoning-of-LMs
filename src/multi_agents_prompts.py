@@ -61,6 +61,7 @@ task_prompt_zero_shot = """You are part of a multi-agent system tasked with spat
 Now, formulate your first-turn structured questions for the VLM to begin the reasoning process.
 """
 
+
 dataset_prior_zero_shot = """
 Additional Context:
 - The dataset consists of pairs of images, each pair showing the same scene from slightly different perspectives due to the camera movement. It is essential to identity the slight changes in object positions in the target image compared to the source image.

@@ -11,7 +11,7 @@ directions:
       no movement: "No movement – The two images are completely identical with no even slight changes."
       unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
     additional_info: |
-      This dataset only contains **camera pitch rotations (upward or downward)** of approximately **15 degrees**.
+      This dataset only contains **camera pitch rotations (upward or downward)** of approximately **10 degrees**.
     CoT: |
       - Case1: The camera rotated upward:
         If the main objects in the source image appear higher in the frame and in the target image they appear lower, the camera has rotated upward.
@@ -91,7 +91,7 @@ directions:
       no movement: "No movement – The two images are completely identical with no even slight changes."
       unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
     additional_info: |
-      This dataset only contains **camera roll rotations (clockwise or counterclockwise)** of approximately **15 degrees**.
+      This dataset only contains **camera roll rotations (clockwise or counterclockwise)** of approximately **10 degrees**.
     CoT: |
       - Case1: The camera rotated clockwise:
         If the horizon in the source image tilts to the right in the target image, the camera has rotated clockwise.
@@ -131,7 +131,7 @@ directions:
       no movement: "No movement – The two images are completely identical with no even slight changes."
       unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
     additional_info: |
-      This dataset only contains **camera translations (forward or backward)** of approximately **0.5 meters**.
+      This dataset only contains **camera translations (forward or backward)** of approximately **0.4 meters**.
     CoT: |
       - Case1: The camera moved forward:
         If objects in the target image appear larger than in the source image, the camera has moved forward.
@@ -167,7 +167,7 @@ directions:
       no movement: "No movement – The two images are completely identical with no even slight changes."
       unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
     additional_info: |
-      This dataset only contains **camera translations (leftward or rightward)** of approximately **0.5 meters**.
+      This dataset only contains **camera translations (leftward or rightward)** of approximately **0.4 meters**.
     CoT: |
       - Case1: The camera moved leftward:
         If objects in the target image appear shifted to the right compared to the source image, the camera has moved leftward.
@@ -209,7 +209,7 @@ directions:
       no movement: "No movement – The two images are completely identical with no even slight changes."
       unable to judge: "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
     additional_info: |
-      This dataset only contains **camera translations (upward or downward)** of approximately **0.5 meters**.
+      This dataset only contains **camera translations (upward or downward)** of approximately **0.3 meters**.
     CoT: |
       - Case1: The camera moved upward:
         If objects in the target image appear lower compared to the source image, the camera has moved upward.
