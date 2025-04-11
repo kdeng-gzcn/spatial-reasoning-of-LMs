@@ -11,6 +11,7 @@ from src.models import (
 def load_model(model_name):
     model_mapping = {
         "meta-llama/Meta-Llama-3-8B-Instruct": LlamaInstruct(name=model_name),
+        "meta-llama/Llama-3.1-8B-Instruct": LlamaInstruct(name=model_name),
         "Qwen/Qwen2.5-7B-Instruct": QwenInstruct(name=model_name),
         "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B": QwenInstruct(name=model_name),
         "gpt-4": GPTInstruct(name=model_name), # llm

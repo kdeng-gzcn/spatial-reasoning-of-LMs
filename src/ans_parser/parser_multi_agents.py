@@ -176,24 +176,8 @@ class Metric0123Conv(ParserTemplate):
         rsn, ques, ans = self._extract_info(text)
         if ans is None: # avoid NoneType error
             print("Answer Option Not Extracted")
-            ans = next(key for key, value in mapping.items() if value == "ask more questions")
+            ans = next(key for key, value in mapping.items() if value == "ask more questions") # if the answer is not found, default to "ask more questions"
         return rsn, ques, ans
-
-        # self.result_one_round = {
-        #     "scene": self.metadata["scene"],
-        #     "seq": self.metadata["seq"],
-        #     "pair": self.metadata["pair"],
-        #     "dof": self.metadata["significance"],
-        #     "label text": self.metadata["significance_text"],
-        #     "label value": self.metadata["significance_value"],
-        #     "round idx": self.round_num,
-        #     "pred option": self.ans,
-        #     "pred text": self.option_map[self.ans],
-        #     "reason": self.rsn,
-        #     "question": self.ques,
-        # }
-
-        # self.result_dict.append(self.result_one_round)
 
     def __call__(self, conclusion_from_LLM: str, mapping: dict) -> dict:
         rsn, ques, ans = self._process_conclusion(conclusion_from_LLM, mapping)
