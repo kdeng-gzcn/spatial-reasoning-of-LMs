@@ -1,9 +1,6 @@
 import argparse
 import logging
 
-import sys
-sys.path.append("")
-
 import dotenv
 
 from src.logging.logging_config import setup_logging
