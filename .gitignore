@@ -1,12 +1,12 @@
-data/
-archive/
 .cache/
+archive/
 benchmark/
-__pycache__
-Server Bash.md
-baskervilleGPU.sh
+data/
 notebook/
-tests/
-visual/
 result/
+tests/
+docs/
+
+__pycache__
+
 .env

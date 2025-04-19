@@ -1,6 +1,3 @@
-import sys
-sys.path.append("")
-
 import cv2
 import json
 from pathlib import Path

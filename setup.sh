@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Exit immediately if a command exits with a non-zero status
-set -e
-
 # Create a Conda environment
 echo "Creating Conda environment..."
 conda create -n spatial_reasoning_env python=3.10 -y
