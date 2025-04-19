@@ -1,3 +1,6 @@
+import sys
+sys.path.append("..")  # Adjust the path to include the parent directory
+
 import argparse
 
 from src.models.utils import load_model

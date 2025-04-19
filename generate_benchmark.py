@@ -135,14 +135,14 @@ for scene in os.listdir(DATASET_DIR):
                 """
 
                 # load pose matrix for pair
-                pose_W2S = np.loadtxt(os.path.join(seq_path, f"frame-{frame1_num:06d}.pose.txt"))
-                pose_W2T = np.loadtxt(os.path.join(seq_path, f"frame-{frame2_num:06d}.pose.txt"))
+                pose_S2W = np.loadtxt(os.path.join(seq_path, f"frame-{frame1_num:06d}.pose.txt"))
+                pose_T2W = np.loadtxt(os.path.join(seq_path, f"frame-{frame2_num:06d}.pose.txt"))
 
-                # P_T2S = P_W2S^-1 @ P_W2T
-                pose_S2T = np.linalg.inv(pose_W2S) @ pose_W2T
+                # P_T2S = P_S2W^-1 @ P_T2W
+                pose_T2S = np.linalg.inv(pose_S2W) @ pose_T2W # relative pose from tgt to src coord.
 
-                t = pose_S2T[:3, 3:].squeeze()
-                Rmat = pose_S2T[:3, :3]
+                t = pose_T2S[:3, 3:].squeeze()
+                Rmat = pose_T2S[:3, :3]
 
                 # transform rad to degree
                 theta = np.degrees(np.arctan2(Rmat[2, 1], Rmat[2, 2]))

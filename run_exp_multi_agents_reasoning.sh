@@ -10,9 +10,14 @@ DATA_DIR="benchmark/RGBD_7_Scenes_Rebuilt"
 VLM_IMAGE_INPUT_TYPE="pair"
 MAX_LEN_OF_CONV=10
 
-for VLM_ID in Qwen/Qwen2.5-VL-7B-Instruct gpt-4o; do
-    for LLM_ID in meta-llama/Llama-3.1-8B-Instruct Qwen/Qwen2.5-7B-Instruct deepseek-ai/DeepSeek-R1-Distill-Qwen-7B; do
-        for SPLIT in theta phi psi tx ty tz; do
+# Qwen/Qwen2.5-VL-7B-Instruct deepseek-ai/DeepSeek-R1-Distill-Qwen-7B on tx ty tz
+
+# for VLM_ID in Qwen/Qwen2.5-VL-7B-Instruct gpt-4o; do
+for VLM_ID in gpt-4o; do
+    # for LLM_ID in meta-llama/Llama-3.1-8B-Instruct Qwen/Qwen2.5-7B-Instruct deepseek-ai/DeepSeek-R1-Distill-Qwen-7B; do
+    for LLM_ID in deepseek-ai/DeepSeek-R1-Distill-Qwen-7B; do
+        # for SPLIT in theta phi psi tx ty tz; do
+        for SPLIT in tx ty tz; do
             echo "Running with VLM_ID: ${VLM_ID}, LLM_ID: ${LLM_ID} on split: ${SPLIT}"
             RESULT_DIR=result/ma_big_table/$(basename "${VLM_ID}")/$(basename "${LLM_ID}")/${SPLIT}
             python experiments/experiment_2_multi_agents.py \
