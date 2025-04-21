@@ -4,4 +4,4 @@ source ~/spatial-reasoning-language-models/miniconda3/bin/activate spatial_reaso
 source .env
 huggingface-cli login --token "${HUGGINGFACE_TOKEN}"
 
-python tests/test_gpt_ordered_images.py
+python tests/test_unproject_distance_angle.py
