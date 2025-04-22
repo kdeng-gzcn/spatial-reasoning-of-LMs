@@ -1,14 +1,15 @@
 import os
 import glob
 import json
+from pathlib import Path
 
 import torchvision.io as io
 from torch.utils.data import Dataset
 
 class SevenScenesImageDataset(Dataset):
-    def __init__(self, data_root_dir: str, split: str) -> None:
+    def __init__(self, data_root_dir: str, **kwargs) -> None:
         self.data_root_dir = data_root_dir
-        self.split = split
+        self.split = kwargs.split
 
         self.data = []
         self._load_image_pairs(self.data_root_dir)
@@ -82,11 +83,9 @@ class SevenScenesImageDataset(Dataset):
         target_image = io.read_image(target_image_path)
 
         metadata_path = os.path.join(pair_path, "metadata.json")
-        metadata = None
 
-        if os.path.exists(metadata_path):
-            with open(metadata_path, "r") as f:
-                metadata = json.load(f)
+        with open(metadata_path, "r") as f:
+            metadata = json.load(f)
 
         item = {
             "source_image": source_image,
@@ -96,3 +95,49 @@ class SevenScenesImageDataset(Dataset):
 
         return item
         
+
+class SevenScenesRelativePoseDataset(Dataset):
+    def __init__(self, data_root_dir: str, **kwargs) -> None:
+        self.data_root_dir = Path(data_root_dir)
+
+        self.list_of_pair_path = []
+        self._load_image_pairs()
+
+    def _load_image_pairs(self) -> None:
+        for scene_dir in self.data_root_dir.iterdir():
+            if not scene_dir.is_dir():
+                continue
+
+            for seq_dir in scene_dir.iterdir():
+                if not seq_dir.is_dir():
+                    continue
+
+                for pair_dir in seq_dir.iterdir():
+                    if not pair_dir.is_dir():
+                        continue
+
+                    self.list_of_pair_path.append(pair_dir)
+
+    def __len__(self):
+        return len(self.list_of_pair_path)
+
+    def __getitem__(self, idx):
+        pair_path = self.list_of_pair_path[idx]
+
+        source_image_path = pair_path / "source" / f"frame-{pair_path.name.split('-')[0]}.color.png"
+        target_image_path = pair_path / "target" / f"frame-{pair_path.name.split('-')[1]}.color.png"
+
+        source_image = io.read_image(source_image_path) # read image path as tensor
+        target_image = io.read_image(target_image_path)
+
+        metadata_path = pair_path / "metadata.json"
+        with open(metadata_path, "r") as f:
+            metadata = json.load(f)
+
+        item = {
+            "source_image": source_image,
+            "target_image": target_image,
+            "metadata": metadata,
+        }
+
+        return item

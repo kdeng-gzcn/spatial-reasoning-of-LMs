@@ -6,8 +6,10 @@ import pandas as pd
 import logging
 from torch.utils.data import DataLoader
 from src.dataset.utils import load_dataset
+from src.logging.logging_config import setup_logging
 
-logging.basicConfig(level=logging.INFO)
+setup_logging()
+logger = logging.getLogger(__name__)
 
 # Constants
 MIN_MATCH_COUNT = 5

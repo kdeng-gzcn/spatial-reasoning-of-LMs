@@ -10,3 +10,5 @@ docs/
 __pycache__
 
 .env
+
+git_config.sh

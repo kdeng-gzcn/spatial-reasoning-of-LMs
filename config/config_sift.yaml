@@ -1,0 +1,8 @@
+min_match_count: 5
+lowes_match_ratio: 0.7
+sift:
+  nfeatures: 0
+  nOctaveLayers: 3
+  contrastThreshold: 0.04
+  edgeThreshold: 10
+  sigma: 1.6
