@@ -551,10 +551,10 @@ class GPTVisionInstruct(VLMTemplate):
         self.prompt_tokens = []
         self.completion_tokens = []
         
-    def _load_weight(self):
+    def _load_weight(self) -> None:
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    def _clear_history(self):
+    def _clear_history(self) -> None:
         self.conversation = []
 
     def _calculate_input_tokens_cost(self, num_tokens: int) -> float:

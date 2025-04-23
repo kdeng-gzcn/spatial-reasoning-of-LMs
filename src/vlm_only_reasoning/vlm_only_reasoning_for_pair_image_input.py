@@ -62,7 +62,7 @@ class VLMOnlyReasoning(VLMOnlyReasoningTemplate):
                     "content": task_prompt,
                 })
 
-                VLM_answers = self.VLM.pipeline(images, task_prompt)
+                VLM_answers = self.VLM.pipeline(images, task_prompt) # __call__
                 new_history_list.append({
                     "scene": metadata["scene"],
                     "seq": metadata["seq"],
@@ -75,7 +75,7 @@ class VLMOnlyReasoning(VLMOnlyReasoningTemplate):
                     "content": VLM_answers,
                 })
 
-                pred = self.ans_parser(VLM_answers, metadata, mapping=opt_map)
+                pred = self.ans_parser(VLM_answers, metadata, mapping=opt_map) # parse the answer
                 new_final_result_list.append({
                     "scene": metadata["scene"],
                     "seq": metadata["seq"],

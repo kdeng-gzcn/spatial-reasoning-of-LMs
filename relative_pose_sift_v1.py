@@ -5,6 +5,7 @@ import yaml
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 import logging
 import argparse
 from typing import Tuple
@@ -84,13 +85,13 @@ def save_results(results: list, result_dir: str) -> None:
     result_dir.mkdir(parents=True, exist_ok=True)
     logging.info("Saving results to %s", result_dir)
 
-    with jsonlines.open(result_dir / "sift_relative_pose_results.jsonl", mode='w') as writer:
+    with jsonlines.open(result_dir / "relative_pose_results.jsonl", mode='w') as writer:
         for result in results:
             writer.write(result)
 
     df = pd.DataFrame(results)
-    df.to_csv(result_dir / "sift_relative_pose_results.csv", index=False) 
-    logging.info("Results saved to %s", result_dir / "sift_relative_pose_results.csv") 
+    df.to_csv(result_dir / "relative_pose_results.csv", index=False) 
+    logging.info("Results saved to %s", result_dir / "relative_pose_results.csv") 
 
     # compute metrics and save results
     y_true = df["label"].values
@@ -110,7 +111,8 @@ def save_results(results: list, result_dir: str) -> None:
         json.dump(metrics, f, indent=4)
     # save confusion matrix
     cm = confusion_matrix(y_true, y_pred)
-    cm_df = pd.DataFrame(cm, index=np.unique(y_true), columns=np.unique(y_pred))
+    labels = list(np.unique(y_pred))
+    cm_df = pd.DataFrame(cm, index=labels, columns=labels)
     cm_df.to_csv(result_dir / "confusion_matrix.csv", index=True)
     logging.info("Metrics saved to %s", result_dir / "metrics.json")
 
@@ -126,10 +128,11 @@ def main(args):
     cfg = yaml.safe_load(Path(args.yaml_file).read_text())
     dataset = load_dataset("relative-pose-7-scenes", data_root_dir=args.data_dir)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
+    dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
 
     sift = cv2.SIFT_create()
     structure_result = []
-    for batch in dataloader:
+    for batch in dataloader_tqdm:
         for item in batch:
             try:
                 src_img, tgt_img = item["source_image"], item["target_image"]
@@ -163,6 +166,15 @@ def main(args):
 
             except Exception as e:
                 logger.error(f"Error processing batch: {e}")
+                structure_result.append({
+                    "scene": item["metadata"]["scene"],
+                    "seq": item["metadata"]["seq"],
+                    "pair": item["metadata"]["pair"],
+                    "label": item["metadata"]["phi_text"],
+                    "pred": "error",
+                    "label_val": np.abs(item["metadata"]["phi"]),
+                    "pred_val": None,
+                })
                 continue
     save_results(structure_result, args.result_dir)
     logger.info("Processing completed.")
