@@ -1,6 +1,6 @@
-task_prompt = """ Task: You are given two images. The first image is the source view, as if you are holding a camera and taking a photo. The second image is the target view, captured after you walk around and rotate the camera.
+task_prompt = """Task: You are given two images. The first image is the source view, as if you are holding a camera and taking a photo. The second image is the target view, captured after you walk around and rotate the camera.
 
-Your goal is to infer the significant **camera rotation** that occurred from the first to the second view.
+Your goal is to infer the significant **yaw camera rotation** that occurred from the first to the second view.
 
 Input:
 - Source Image and Target Image: Both show roughly the same scene from different viewing angles.

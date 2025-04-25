@@ -120,7 +120,7 @@ def main(args):
             try:
                 src_img, tgt_img = item["source_image"], item["target_image"]
 
-                src_img = src_img.float() / 255.0
+                src_img = src_img.float() / 255.0 # transform uint8 into rgb32
                 tgt_img = tgt_img.float() / 255.0
 
                 src_img = src_img.unsqueeze(0)
@@ -130,8 +130,8 @@ def main(args):
                 tgt_img = K.geometry.resize(tgt_img, (480, 640), antialias=True)
 
                 input_dict = {
-                    "image0": K.color.rgb_to_grayscale(src_img),
-                    "image1": K.color.rgb_to_grayscale(tgt_img),
+                    "image0": K.color.rgb_to_grayscale(tgt_img), # image0 is target image
+                    "image1": K.color.rgb_to_grayscale(src_img),
                 }
 
                 with torch.inference_mode():
@@ -150,7 +150,7 @@ def main(args):
                 
                 _, Rmat, t, _ = cv2.recoverPose(E, mkpts0, mkpts1, K_intrinsic)
 
-                pred = pose2prediction(Rmat, t)
+                pred = pose2prediction(Rmat, t.squeeze())
                 
                 structure_result.append({
                     "scene": item["metadata"]["scene"],
