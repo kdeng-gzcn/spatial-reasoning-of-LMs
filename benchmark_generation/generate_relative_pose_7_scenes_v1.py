@@ -18,8 +18,6 @@ import logging
 
 from src.logging.logging_config import setup_logging
 
-from config.camera_intrinsic import K, K_inv
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Generate relative pose for 7 scenes")
     parser.add_argument(
@@ -142,6 +140,9 @@ def main(args):
     # Load the YAML file
     with open(args.yaml_file, 'r') as file:
         cfg = yaml.safe_load(file)
+
+    K = np.array(cfg["camera_intrinsics"]["K"])
+    K_inv = np.linalg.inv(K)
 
     # Create a new directory for the output
     output_dir = Path(args.output_dir)
