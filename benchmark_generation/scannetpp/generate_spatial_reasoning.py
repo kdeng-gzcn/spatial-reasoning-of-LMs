@@ -42,13 +42,15 @@ def parse_args():
     return parser.parse_args()
 
 
-def _get_relative_pose(src_img: dict, tgt_img: dict) -> dict:
+def _get_relative_pose(src_img: dict, tgt_img: dict, frame_id_to_pose: dict) -> dict:
     """
     Get the relative pose between two images.
     """
     # Load the poses
-    pose_src2world = np.loadtxt(src_img["pose_path"])
-    pose_tgt2world = np.loadtxt(tgt_img["pose_path"])
+    pose_src2world = frame_id_to_pose[src_img["image_path"].stem]
+    pose_src2world = pose_src2world @ np.diag([1, -1, -1, 1]) # flip y-axis, z-axis
+    pose_tgt2world = frame_id_to_pose[tgt_img["image_path"].stem]
+    pose_tgt2world = pose_tgt2world @ np.diag([1, -1, -1, 1]) # flip y-axis, z-axis
 
     # Compute the relative pose
     pose_tgt2src = np.linalg.inv(pose_src2world) @ pose_tgt2world
@@ -115,21 +117,32 @@ def main(args):
 
     global_metadata = []
     # Initialize tqdm progress bar
-    scene_bar = tqdm.tqdm(total=sum(1 for _ in dataset_dir.iterdir() if _.is_dir()), unit="scene")
-    for scene_dir in dataset_dir.iterdir():
-        if not scene_dir.is_dir():
+    hash_id_bar = tqdm.tqdm(total=sum(1 for _ in dataset_dir.iterdir() if _.is_dir()), unit="scene")
+    for hash_dir in dataset_dir.iterdir():
+        if not hash_dir.is_dir():
             continue
-        scene_bar.set_description(f"Processing scene: {scene_dir.name}")
-        scene_bar.update(1)
-        logger.info(f"Processing scene: {scene_dir.name}")
+        hash_id_bar.set_description(f"Processing hash id: {hash_dir.name}")
+        hash_id_bar.update(1)
+        logger.info(f"Processing hash id: {hash_dir.name}")
         
-        color_dir = scene_dir / "color"
-        depth_dir = scene_dir / "depth"
-        pose_dir = scene_dir / "pose"
+        # make sure the dir is to images and poses
+        color_dir = hash_dir / "dslr" / "resized_undistorted_images"
+
+        camera_json_path = hash_dir / "dslr" / "nerfstudio" / "transforms_undistorted.json"
+        with open(camera_json_path, "r") as f:
+            camera_json = json.load(f)
+
+        frame_id_to_pose = {}
+        for frame in camera_json["frames"]:
+            filename = frame['file_path'].split('.')[0]
+            frame_id_to_pose[filename] = np.array(frame['transform_matrix'])
+        for frame in camera_json["test_frames"]:
+            filename = frame['file_path'].split('.')[0]
+            frame_id_to_pose[filename] = np.array(frame['transform_matrix'])
 
         img_indices = [file.stem for file in color_dir.iterdir()]
-        img_indices.sort(key=int)
-        logger.info(f"Number of images in {scene_dir.name}: {len(img_indices)}")
+        img_indices.sort(key=lambda x: int(x[3:]))
+        logger.info(f"Number of images in {hash_dir.name}: {len(img_indices)}")
 
         i = 0
         while i < len(img_indices) - 1:
@@ -142,44 +155,49 @@ def main(args):
                 idx_tgt_frame = img_indices[j]
                 if (j - i) > cfg["max_frame_interval"]:
                     logger.warning(
-                        f"Frame interval not satisfied for {scene_dir.name}, "
-                        f"frame-{idx_src_frame}, moving to next source frame."
+                        f"Frame interval not satisfied for {hash_dir.name}, "
+                        f"frame-{idx_src_frame[3:]}, moving to next source frame."
                     )
                     is_out_of_range = True
-                    i += 50
+                    i += 25
                     break
 
                 src_img = {
-                    "image_path": color_dir / f"{idx_src_frame}.jpg",
-                    "depth_path": depth_dir / f"{idx_src_frame}.png",
-                    "pose_path": pose_dir / f"{idx_src_frame}.txt",
+                    "image_path": color_dir / f"{idx_src_frame}.JPG",
+                    # "depth_path": depth_dir / f"{idx_src_frame}.png",
+                    # "pose_path": pose_dir / f"{idx_src_frame}.txt",
                 }
 
                 tgt_img = {
-                    "image_path": color_dir / f"{idx_tgt_frame}.jpg",
-                    "depth_path": depth_dir / f"{idx_tgt_frame}.png",
-                    "pose_path": pose_dir / f"{idx_tgt_frame}.txt",
+                    "image_path": color_dir / f"{idx_tgt_frame}.JPG",
+                    # "depth_path": depth_dir / f"{idx_tgt_frame}.png",
+                    # "pose_path": pose_dir / f"{idx_tgt_frame}.txt",
                 }
 
                 # condition for spatial reasoning
-                relative_pose = _get_relative_pose(src_img, tgt_img)
+                relative_pose = _get_relative_pose(src_img, tgt_img, frame_id_to_pose)
                 is_satisfied_pair, dof = _judge_pair_validity(cfg, relative_pose)
 
                 if is_satisfied_pair:
                     i = j
                     logger.info(
-                        f"Found a valid pair: {scene_dir.name} "
-                        f"frame-{idx_src_frame} and frame-{idx_tgt_frame} "
+                        f"Found a valid pair: {hash_dir.name} "
+                        f"frame-{idx_src_frame[3:]} and frame-{idx_tgt_frame[3:]} "
                         f"with {dof}: {relative_pose[dof]:.4f}"
                     )
                     is_satisfied_pair = True
                     break
 
             if is_satisfied_pair:
-                idx_src_frame = f"{int(idx_src_frame):06d}"
-                idx_tgt_frame = f"{int(idx_tgt_frame):06d}"
+                pose_src2world = frame_id_to_pose[idx_src_frame]
+                pose_src2world = pose_src2world @ np.diag([1, -1, -1, 1]) # flip y-axis, z-axis
+                pose_tgt2world = frame_id_to_pose[idx_tgt_frame]
+                pose_tgt2world = pose_tgt2world @ np.diag([1, -1, -1, 1]) # flip y-axis, z-axis
+                
+                idx_src_frame = f"{int(idx_src_frame[3:]):06d}"
+                idx_tgt_frame = f"{int(idx_tgt_frame[3:]):06d}"
                 # Create the output directory for the pair
-                pair_dir = output_dir / f"{dof}_significant" / scene_dir.name / f"{idx_src_frame}-{idx_tgt_frame}"
+                pair_dir = output_dir / f"{dof}_significant" / hash_dir.name / f"{idx_src_frame}-{idx_tgt_frame}"
                 # pair_dir.mkdir(parents=True, exist_ok=True)
                 src_dir = pair_dir / "source"
                 tgt_dir = pair_dir / "target"
@@ -187,14 +205,15 @@ def main(args):
                 tgt_dir.mkdir(parents=True, exist_ok=True)
                 # Copy the images and poses to the output directory
                 shutil.copy(src_img["image_path"], src_dir / f"{idx_src_frame}.jpg")
-                shutil.copy(src_img["depth_path"], src_dir / f"{idx_src_frame}.png")
-                shutil.copy(src_img["pose_path"], src_dir / f"{idx_src_frame}.txt")
-                shutil.copy(tgt_img["image_path"], tgt_dir / f"{idx_tgt_frame}.jpg")
-                shutil.copy(tgt_img["depth_path"], tgt_dir / f"{idx_tgt_frame}.png")
-                shutil.copy(tgt_img["pose_path"], tgt_dir / f"{idx_tgt_frame}.txt")
+                # shutil.copy(src_img["depth_path"], src_dir / f"{idx_src_frame}.png")
+                np.savetxt(src_dir / f"{idx_src_frame}.txt", pose_src2world, fmt="%.6f")
 
+                shutil.copy(tgt_img["image_path"], tgt_dir / f"{idx_tgt_frame}.jpg")
+                # shutil.copy(tgt_img["depth_path"], tgt_dir / f"{idx_tgt_frame}.png")
+                np.savetxt(tgt_dir / f"{idx_tgt_frame}.txt", pose_tgt2world, fmt="%.6f")
+                
                 metadata = {
-                    "scene": scene_dir.name,
+                    "hash_id": hash_dir.name,
                     "pair": f"{idx_src_frame}-{idx_tgt_frame}",
                     "tx": np.round(relative_pose["tx"], 6),
                     "ty": np.round(relative_pose["ty"], 6),
@@ -225,20 +244,20 @@ def main(args):
                 with open(json_file, "w") as f:
                     json.dump(metadata, f, indent=4)
 
-                logger.info(f"Saved metadata for {scene_dir.name} pair-{idx_src_frame}-{idx_tgt_frame}")
+                logger.info(f"Saved metadata for {hash_dir.name} pair-{idx_src_frame}-{idx_tgt_frame}")
             else:
                 # common case is out of range, no need to debug
 
                 # if we are going to the tail but not out of range:                
                 if not is_out_of_range:
                     logger.warning(
-                        f"Frame interval exceeded for {scene_dir.name} "
-                        f"frame-{idx_src_frame}, moving to next source frame."
+                        f"Frame interval exceeded for {hash_dir.name} "
+                        f"frame-{idx_src_frame[3:]}, moving to next source frame."
                     )
-                    i += 50
+                    i += 25
                     
     logger.info("Processing completed.")
-    scene_bar.close()
+    hash_id_bar.close()
 
     # # Save the global metadata to a JSON file
     # global_metadata_file = output_dir / "global_metadata.json"

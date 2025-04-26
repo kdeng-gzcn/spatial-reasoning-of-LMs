@@ -1,0 +1,3 @@
+max_distance: 300
+min_frame_interval: 50
+max_frame_interval: 500
