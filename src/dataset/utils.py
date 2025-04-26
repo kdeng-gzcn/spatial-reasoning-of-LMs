@@ -1,12 +1,18 @@
 from src.dataset import (
     SevenScenesImageDataset,
     SevenScenesRelativePoseDataset,
+    ScanNetSpatialReasoningDataset,
+    ScanNetYawDataset,
+    ScanNetppSpatialReasoningDataset,
 )
 
 def load_dataset(dataset_name: str, data_root_dir: str, **kwargs) -> object:
     dataset_mapping = {
         "7 Scenes": SevenScenesImageDataset,
         "relative-pose-7-scenes": SevenScenesRelativePoseDataset,
+        "spatial-reasoning-scannet": ScanNetSpatialReasoningDataset,
+        "relative-pose-scannet": ScanNetYawDataset,
+        "spatial-reasoning-scannetpp": ScanNetppSpatialReasoningDataset,
     }
 
     if dataset_name not in dataset_mapping:

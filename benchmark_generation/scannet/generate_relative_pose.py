@@ -93,69 +93,15 @@ def _reproject(pose, K, point3D) -> np.ndarray:
     return projection[:2]  
 
 
-def _get_distance_and_angle(src_img: dict, tgt_img: dict, K, K_inv) -> tuple:
-    im0 = np.array(Image.open(src_img["image_path"]))
-    im100 = np.array(Image.open(tgt_img["image_path"]))
-    depth0 = np.array(Image.open(src_img["depth_path"]))
-    depth100 = np.array(Image.open(tgt_img["depth_path"]))
-    pose0 = np.loadtxt(src_img["pose_path"])
-    pose100 = np.loadtxt(tgt_img["pose_path"])
+def _get_distance_and_angle(view_dict: dict, idx_src_frame: str, idx_tgt_frame: str,  K, K_inv) -> tuple:
+    src_center_x, src_center_y = view_dict[idx_src_frame]["image"].shape[1] // 2, view_dict[idx_src_frame]["image"].shape[0] // 2
+    tgt_center_x, tgt_center_y = view_dict[idx_tgt_frame]["image"].shape[1] // 2, view_dict[idx_tgt_frame]["image"].shape[0] // 2
 
-    # unproject, from 2D to 3D World Coordinate
-    central_pixel_0_x = im0.shape[1] // 2
-    central_pixel_0_y = im0.shape[0] // 2
-    central_pixel_0_depth = depth0[central_pixel_0_y, central_pixel_0_x] / 1000
-    centeral_pixel_3D_point_0_world = _unproject(pose0, K_inv, central_pixel_0_x, central_pixel_0_y, central_pixel_0_depth)
+    src_depth = view_dict[idx_src_frame]["depth_of_center"]
+    tgt_depth = view_dict[idx_tgt_frame]["depth_of_center"]
 
-    # unproject, from 2D to 3D World Coordinate
-    central_pixel_100_x = im100.shape[1] // 2
-    central_pixel_100_y = im100.shape[0] // 2
-    central_pixel_100_depth = depth100[central_pixel_100_y, central_pixel_100_x] / 1000
-
-    centeral_pixel_3D_point_100_world = _unproject(pose100, K_inv,central_pixel_100_x, central_pixel_100_y, central_pixel_100_depth)
-
-    # reproject, from 3D World Coordinate to 2D
-    reprojection_0_to_100 = _reproject(pose100, K, centeral_pixel_3D_point_0_world)
-    reprojection_100_to_0 = _reproject(pose0, K, centeral_pixel_3D_point_100_world)
-
-    center0_world = pose0[:3, 3]
-    center100_world = pose100[:3, 3]
-
-    angle_point0 = _get_angle(
-        center0_world, 
-        centeral_pixel_3D_point_0_world, 
-        center100_world
-    )
-    angle_point100 = _get_angle(center0_world, centeral_pixel_3D_point_100_world, center100_world)
-    distance_0 = np.linalg.norm(np.array((central_pixel_0_x, central_pixel_0_y)) - reprojection_100_to_0)
-    distance_100 = np.linalg.norm(np.array((central_pixel_100_x, central_pixel_100_y)) - reprojection_0_to_100)
-
-    return np.mean([distance_0, distance_100]), np.mean([angle_point0, angle_point100])
-
-
-def _get_distance_and_angle(src_img: dict, tgt_img: dict, K, K_inv) -> tuple:
-    # Load only the necessary parts of the images/depth maps
-    src_im = np.array(Image.open(src_img["image_path"]))
-    tgt_im = np.array(Image.open(tgt_img["image_path"]))
-    
-    # Extract central pixels once
-    src_center_x, src_center_y = src_im.shape[1] // 2, src_im.shape[0] // 2
-    tgt_center_x, tgt_center_y = tgt_im.shape[1] // 2, tgt_im.shape[0] // 2
-    
-    # Load and resize depth maps to match color image size
-    with Image.open(src_img["depth_path"]) as depth_img:
-        depth_img = np.array(depth_img)
-        depth_img = cv2.resize(depth_img, (src_im.shape[1], src_im.shape[0]), interpolation=cv2.INTER_NEAREST)
-        src_depth = depth_img[src_center_y, src_center_x] / 1000.0 
-    
-    with Image.open(tgt_img["depth_path"]) as depth_img:
-        depth_img = np.array(depth_img)
-        depth_img = cv2.resize(depth_img, (tgt_im.shape[1], tgt_im.shape[0]), interpolation=cv2.INTER_NEAREST)
-        tgt_depth = depth_img[tgt_center_y, tgt_center_x] / 1000.0
-    
-    # Load pose matrices
-    src_pose = np.loadtxt(src_img["pose_path"])
-    tgt_pose = np.loadtxt(tgt_img["pose_path"])
+    src_pose = view_dict[idx_src_frame]["pose"]
+    tgt_pose = view_dict[idx_tgt_frame]["pose"]
     
     # Extract camera centers for later use
     src_center_world = src_pose[:3, 3]
@@ -163,8 +109,14 @@ def _get_distance_and_angle(src_img: dict, tgt_img: dict, K, K_inv) -> tuple:
     
     # Unproject central pixels to 3D world coordinates
     src_point_world = _unproject(src_pose, K_inv, src_center_x, src_center_y, src_depth)
+    angle_src = _get_angle(src_center_world, src_point_world, tgt_center_world)
+    if angle_src < 3:
+        return 0.0, 0.0
     tgt_point_world = _unproject(tgt_pose, K_inv, tgt_center_x, tgt_center_y, tgt_depth)
-    
+    angle_tgt = _get_angle(src_center_world, tgt_point_world, tgt_center_world)
+    if angle_tgt < 3:
+        return 0.0, 0.0
+
     # Reproject 3D points to 2D in the other view
     src_to_tgt_proj = _reproject(tgt_pose, K, src_point_world)
     tgt_to_src_proj = _reproject(src_pose, K, tgt_point_world)
@@ -172,10 +124,6 @@ def _get_distance_and_angle(src_img: dict, tgt_img: dict, K, K_inv) -> tuple:
     # Calculate distances in 2D
     distance_src = np.linalg.norm(np.array((src_center_x, src_center_y)) - tgt_to_src_proj)
     distance_tgt = np.linalg.norm(np.array((tgt_center_x, tgt_center_y)) - src_to_tgt_proj)
-    
-    # Calculate angles
-    angle_src = _get_angle(src_center_world, src_point_world, tgt_center_world)
-    angle_tgt = _get_angle(src_center_world, tgt_point_world, tgt_center_world)
     
     # Return averages
     return (distance_src + distance_tgt) / 2, (angle_src + angle_tgt) / 2
@@ -232,6 +180,22 @@ def main(args):
         img_indices.sort(key=int)
         logger.info(f"Number of images in {scene_dir.name}: {len(img_indices)}")
 
+        # read images and depth and pose here, to make a big dict
+        view_dict = {}
+        for view_id in img_indices:
+            view_dict[view_id] = {}
+            view_dict[view_id]["image_path"] = str(color_dir / f"{view_id}.jpg")
+            view_dict[view_id]["depth_path"] = str(depth_dir / f"{view_id}.png")
+            view_dict[view_id]["pose_path"] = str(pose_dir / f"{view_id}.txt")
+            view_dict[view_id]["image"] = cv2.imread(view_dict[view_id]["image_path"])
+            view_dict[view_id]["depth"] = cv2.imread(view_dict[view_id]["depth_path"], cv2.IMREAD_UNCHANGED)
+            view_dict[view_id]["pose"] = np.loadtxt(view_dict[view_id]["pose_path"])
+            view_dict[view_id]["depth"] = cv2.resize(view_dict[view_id]["depth"], (view_dict[view_id]["image"].shape[1], view_dict[view_id]["image"].shape[0]), interpolation=cv2.INTER_NEAREST)
+            view_dict[view_id]["depth"] = view_dict[view_id]["depth"] / 1000.0  # Convert to meters
+            view_dict[view_id]["depth_of_center"] = view_dict[view_id]["depth"][view_dict[view_id]["image"].shape[0] // 2, view_dict[view_id]["image"].shape[1] // 2]
+
+        logger.info(f"Loaded {len(img_indices)} images for scene {scene_dir.name} in a dict")
+
         i = 0
         while i < len(img_indices) - 1:
             idx_src_frame = img_indices[i]
@@ -243,58 +207,46 @@ def main(args):
                 idx_tgt_frame = img_indices[j]
                 if (j - i) > cfg["max_frame_interval"]:
                     logger.warning(
-                        f"Frame interval not satisfied for {scene_dir.name}, "
-                        f"frame-{idx_src_frame}, moving to next source frame."
+                        f"Frame interval not satisfied, we find all neighbour frame for {scene_dir.name} "
+                        f"frame-{int(idx_src_frame):06d}, moving to next source frame."
                     )
                     is_out_of_range = True
-                    i += 50
+                    i += 25
                     break
 
-                src_img = {
-                    "image_path": color_dir / f"{idx_src_frame}.jpg",
-                    "depth_path": depth_dir / f"{idx_src_frame}.png",
-                    "pose_path": pose_dir / f"{idx_src_frame}.txt",
-                }
-
-                tgt_img = {
-                    "image_path": color_dir / f"{idx_tgt_frame}.jpg",
-                    "depth_path": depth_dir / f"{idx_tgt_frame}.png",
-                    "pose_path": pose_dir / f"{idx_tgt_frame}.txt",
-                }
-
-                distance, angle = _get_distance_and_angle(src_img, tgt_img, K, K_inv)
+                distance, angle = _get_distance_and_angle(view_dict, idx_src_frame, idx_tgt_frame, K, K_inv)
 
                 # test the condition
                 if distance < cfg["max_distance"] and angle > args.min_angle:
                     i = j
                     logger.info(
                         f"Found a valid pair: {scene_dir.name} "
-                        f"frame-{idx_src_frame} and frame-{idx_tgt_frame} "
+                        f"frame-{int(idx_src_frame):06d} and frame-{int(idx_tgt_frame):06d} "
                         f"with distance: {distance:.4f} and angle: {angle:.4f}"
                     )
                     is_satisfied_pair = True
                     break
 
             if is_satisfied_pair:
-                idx_src_frame = f"{int(idx_src_frame):06d}"
-                idx_tgt_frame = f"{int(idx_tgt_frame):06d}"
+                # idx_src_frame = f"{int(idx_src_frame):06d}"
+                # idx_tgt_frame = f"{int(idx_tgt_frame):06d}"
                 # Create the output directory for the pair
-                pair_dir = output_dir / scene_dir.name / f"{idx_src_frame}-{idx_tgt_frame}"
+                pair_dir = output_dir / scene_dir.name / f"{int(idx_src_frame):06d}-{int(idx_tgt_frame):06d}"
                 # pair_dir.mkdir(parents=True, exist_ok=True)
                 src_dir = pair_dir / "source"
                 tgt_dir = pair_dir / "target"
                 src_dir.mkdir(parents=True, exist_ok=True)
                 tgt_dir.mkdir(parents=True, exist_ok=True)
                 # Copy the images and poses to the output directory
-                shutil.copy(src_img["image_path"], src_dir / f"{idx_src_frame}.jpg")
-                shutil.copy(src_img["depth_path"], src_dir / f"{idx_src_frame}.png")
-                shutil.copy(src_img["pose_path"], src_dir / f"{idx_src_frame}.txt")
-                shutil.copy(tgt_img["image_path"], tgt_dir / f"{idx_tgt_frame}.jpg")
-                shutil.copy(tgt_img["depth_path"], tgt_dir / f"{idx_tgt_frame}.png")
-                shutil.copy(tgt_img["pose_path"], tgt_dir / f"{idx_tgt_frame}.txt")
+                shutil.copy(view_dict[idx_src_frame]["image_path"], src_dir / f"{idx_src_frame}.jpg")
+                shutil.copy(view_dict[idx_src_frame]["depth_path"], src_dir / f"{idx_src_frame}.png")
+                shutil.copy(view_dict[idx_src_frame]["pose_path"], src_dir / f"{idx_src_frame}.txt")
+                shutil.copy(view_dict[idx_tgt_frame]["image_path"], tgt_dir / f"{idx_tgt_frame}.jpg")
+                shutil.copy(view_dict[idx_tgt_frame]["depth_path"], src_dir / f"{idx_tgt_frame}.png")
+                shutil.copy(view_dict[idx_tgt_frame]["pose_path"], src_dir / f"{idx_tgt_frame}.txt")
 
-                pose_src2world = np.loadtxt(src_img["pose_path"])
-                pose_tgt2world = np.loadtxt(tgt_img["pose_path"])
+                pose_src2world = view_dict[idx_src_frame]["pose"]
+                pose_tgt2world = view_dict[idx_tgt_frame]["pose"]
 
                 pose_tgt2src = np.linalg.inv(pose_src2world) @ pose_tgt2world
 
@@ -307,7 +259,7 @@ def main(args):
 
                 metadata = {
                     "scene": scene_dir.name,
-                    "pair": f"{idx_src_frame}-{idx_tgt_frame}",
+                    "pair": f"{int(idx_src_frame):06d}-{int(idx_tgt_frame):06d}",
                     "tx": np.round(t[0], 6),
                     "ty": np.round(t[1], 6),
                     "tz": np.round(t[2], 6),
@@ -336,23 +288,17 @@ def main(args):
                 with open(json_file, "w") as f:
                     json.dump(metadata, f, indent=4)
 
-                logger.info(f"Saved metadata for {scene_dir.name} pair-{idx_src_frame}-{idx_tgt_frame}")
+                logger.info(f"Saved metadata for {scene_dir.name} pair-{int(idx_src_frame):06d}-{int(idx_tgt_frame):06d}")
             else:                    
                 if not is_out_of_range:
                     logger.warning(
-                        f"Frame interval exceeded for {scene_dir.name} "
-                        f"frame-{idx_src_frame}, moving to next source frame."
+                        f"Frame interval exceeded, we are in the tail for {scene_dir.name} "
+                        f"frame-{int(idx_src_frame):06d}, moving to next source frame."
                     )
-                    i += 50
+                    i += 25
                     
     logger.info("Processing completed.")
     scene_bar.close()
-
-    # # Save the global metadata to a JSON file
-    # global_metadata_file = output_dir / "global_metadata.json"
-    # with open(global_metadata_file, "w") as f:
-    #     json.dump(global_metadata, f, indent=4)
-    # logger.info(f"Global metadata saved to {global_metadata_file}")
 
     # Save the global metadata to a CSV file
     global_metadata_csv = output_dir / "global_metadata.csv"
