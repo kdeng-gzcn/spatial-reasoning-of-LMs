@@ -6,6 +6,7 @@ notebook/
 result/
 tests/
 docs/
+ScanNet/
 
 __pycache__
 

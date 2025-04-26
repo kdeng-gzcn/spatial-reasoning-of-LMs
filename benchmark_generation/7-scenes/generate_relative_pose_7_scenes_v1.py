@@ -92,7 +92,7 @@ def _reproject(pose, K, point3D) -> np.ndarray:
     return projection[:2]  
 
 
-def _get_distance_and_angle(src_img: dict, tgt_img: dict):
+def _get_distance_and_angle(src_img: dict, tgt_img: dict, K, K_inv) -> tuple:
     im0 = np.array(Image.open(src_img["image_path"]))
     im100 = np.array(Image.open(tgt_img["image_path"]))
     depth0 = np.array(Image.open(src_img["depth_path"]))
@@ -215,7 +215,7 @@ def main(args):
                         "pose_path": seq_dir / f"frame-{idx_tgt_frame}.pose.txt",
                     }
 
-                    distance, angle = _get_distance_and_angle(src_img, tgt_img)
+                    distance, angle = _get_distance_and_angle(src_img, tgt_img, K, K_inv)
 
                     # test the condition
                     if distance < cfg["max_distance"] and angle > args.min_angle:

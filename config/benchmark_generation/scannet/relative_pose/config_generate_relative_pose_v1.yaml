@@ -1,0 +1,7 @@
+max_distance: 300
+min_frame_interval: 40
+max_frame_interval: 700
+K:
+ - [585, 0, 320]
+ - [0, 585, 240]
+ - [0, 0, 1]

@@ -21,3 +21,6 @@ git clone https://github.com/ScanNet/ScanNet.git
 ```bash
 bash data/scannet-v2/reader.sh 
 ```
+
+### ScanNet++
+this script is to download dataset
