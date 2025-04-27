@@ -1,8 +1,23 @@
 # Evaluation of Spatial Reasoning
+## Task: Single-DoF Camera Motion Classification
+
+## Task: Object-Centered View Shift Classification
 
 ## Usage
 ### Generate benchmark based on 3D dataset
+```bash
+bash xxx
+```
 ### Evaluate Vision Language Models' performance on customed benchmark
+- task1
+```bash
+bash xxx
+```
+- task2
+```bash
+bash xxx
+```
+
 run demo on pair images:
 ```bash
 bash scripts/run_tests.sh
