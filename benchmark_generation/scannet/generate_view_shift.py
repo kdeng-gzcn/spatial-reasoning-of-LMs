@@ -242,8 +242,8 @@ def main(args):
                 shutil.copy(view_dict[idx_src_frame]["depth_path"], src_dir / f"{idx_src_frame}.png")
                 shutil.copy(view_dict[idx_src_frame]["pose_path"], src_dir / f"{idx_src_frame}.txt")
                 shutil.copy(view_dict[idx_tgt_frame]["image_path"], tgt_dir / f"{idx_tgt_frame}.jpg")
-                shutil.copy(view_dict[idx_tgt_frame]["depth_path"], src_dir / f"{idx_tgt_frame}.png")
-                shutil.copy(view_dict[idx_tgt_frame]["pose_path"], src_dir / f"{idx_tgt_frame}.txt")
+                shutil.copy(view_dict[idx_tgt_frame]["depth_path"], tgt_dir / f"{idx_tgt_frame}.png")
+                shutil.copy(view_dict[idx_tgt_frame]["pose_path"], tgt_dir / f"{idx_tgt_frame}.txt")
 
                 pose_src2world = view_dict[idx_src_frame]["pose"]
                 pose_tgt2world = view_dict[idx_tgt_frame]["pose"]

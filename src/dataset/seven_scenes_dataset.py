@@ -1,6 +1,7 @@
 import os
 import glob
 import json
+import logging
 from pathlib import Path
 
 import torchvision.io as io
@@ -8,14 +9,14 @@ from torch.utils.data import Dataset
 
 class SevenScenesImageDataset(Dataset):
     def __init__(self, data_root_dir: str, **kwargs) -> None:
+        self.logger = logging.getLogger(__name__)
         self.data_root_dir = data_root_dir
-        self.split = kwargs.split
+        self.split = kwargs["split"]
 
         self.data = []
         self._load_image_pairs(self.data_root_dir)
 
     def _load_image_pairs(self, data_dir: str) -> None:
-        assert isinstance(data_dir, str), "Error in data_dir"
         if self.split == "all":
             for dof in os.listdir(self.data_root_dir):
                 dof_path = os.path.join(self.data_root_dir, dof)
@@ -56,7 +57,7 @@ class SevenScenesImageDataset(Dataset):
                         if not os.path.isdir(pair_path):
                             continue
 
-                        self.data.append(pair_path)
+                        self.data.append(pair_path) # no need to count, max 90 pairs
 
         else:
             print(f"{self.split} Not Recognized")
@@ -96,11 +97,13 @@ class SevenScenesImageDataset(Dataset):
         return item
         
 
-class SevenScenesRelativePoseDataset(Dataset):
+class SevenScenesViewShiftDataset(Dataset):
     def __init__(self, data_root_dir: str, **kwargs) -> None:
+        self.logger = logging.getLogger(__name__)
         self.data_root_dir = Path(data_root_dir)
 
         self.list_of_pair_path = []
+        self.dataset_length_count = 0
         self._load_image_pairs()
 
     def _load_image_pairs(self) -> None:
@@ -116,7 +119,12 @@ class SevenScenesRelativePoseDataset(Dataset):
                     if not pair_dir.is_dir():
                         continue
 
+                    if self.dataset_length_count >= 250:
+                        self.logger.warning(f"Dataset length count exceeded 250 for dir {self.data_root_dir}.")
+                        return
+
                     self.list_of_pair_path.append(pair_dir)
+                    self.dataset_length_count += 1
 
     def __len__(self):
         return len(self.list_of_pair_path)

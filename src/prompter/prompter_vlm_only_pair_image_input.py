@@ -15,7 +15,6 @@ class TaskPrompterVLMOnly(PromptTemplate):
     def __init__(self, **kwargs):
         super().__init__() # seed
         self.options_config = yaml.safe_load(open("src/vlm_only_options.yaml", "r"))
-        print(self.options_config)
         self.split = kwargs.get("split")
         self.options_config = self.options_config.get("directions").get(self.split)
         self.is_shuffle = kwargs.get("is_shuffle")

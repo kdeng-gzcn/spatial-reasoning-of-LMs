@@ -1,8 +1,8 @@
-from .seven_scenes_dataset import SevenScenesImageDataset, SevenScenesRelativePoseDataset
+from .seven_scenes_dataset import SevenScenesImageDataset, SevenScenesViewShiftDataset
 from .scannet_dataset import (
-    ScanNetSpatialReasoningDataset,
-    ScanNetYawDataset,
+    ScanNetCameraMotionDataset,
+    ScanNetViewShiftDataset,
 )
 from .scannetpp_dataset import (
-    ScanNetppSpatialReasoningDataset,
+    ScanNetppCameraMotionDataset,
 )

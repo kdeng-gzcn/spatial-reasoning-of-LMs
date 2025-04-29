@@ -14,7 +14,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from src.dataset.utils import load_dataset
 from src.models.utils import load_model
 from src.logging.logging_config import setup_logging
-from config.vlm_relative_pose_prompt_v1 import task_prompt, short_answer_dict, detailed_answer_dict
+from config.eval_view_shift.vlm_relative_pose_prompt_v1 import task_prompt, short_answer_dict, detailed_answer_dict
 
 # set seed
 import random
@@ -98,13 +98,13 @@ def save_results(cfg: dict, results: list, result_dir: str) -> None:
     with open(result_dir / "cfg.json", "w") as f:
         json.dump(cfg, f, indent=4)
 
-    with jsonlines.open(result_dir / f"relative_pose_results.jsonl", mode='w') as writer:
+    with jsonlines.open(result_dir / f"view_shift_results.jsonl", mode='w') as writer:
         for result in results:
             writer.write(result)
 
     df = pd.DataFrame(results)
-    df.to_csv(result_dir / f"relative_pose_results.csv", index=False) 
-    logging.info("Results saved to %s", result_dir / f"relative_pose_results.csv") 
+    df.to_csv(result_dir / f"view_shift_results.csv", index=False) 
+    logging.info("Results saved to %s", result_dir / f"view_shift_results.csv") 
 
     # compute metrics and save results
     y_true = df["label"].values
@@ -146,7 +146,7 @@ def main(args):
 
     model = load_model(args.model_id)
     model._load_weight()
-    dataset = load_dataset("relative-pose-7-scenes", data_root_dir=args.data_dir)
+    dataset = load_dataset(Path(args.data_dir).parent.name, data_root_dir=args.data_dir)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
     dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
 
@@ -166,10 +166,22 @@ def main(args):
                 prompt, option_map = generate_prompt()
                 answer = model.pipeline(images, prompt)  # __call__
                 pred = parse_answer(answer, option_map)  # parse the answer
+
+                if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
+                    metadata_prefix = {
+                        "scene": item["metadata"]["scene"],
+                        "seq": item["metadata"]["seq"],
+                    }
+                elif Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
+                    metadata_prefix = {
+                        "scene": item["metadata"]["scene"],
+                    }
+                else:
+                    metadata_prefix = {}
+                    logger.error(f"Invalid dataset: {Path(args.data_dir).parent.name}.")
                 
                 structure_result.append({
-                    "scene": item["metadata"]["scene"],
-                    "seq": item["metadata"]["seq"],
+                    **metadata_prefix,
                     "pair": item["metadata"]["pair"],
                     "label": item["metadata"]["phi_text"],
                     "pred": pred["ans_text"],
@@ -183,7 +195,7 @@ def main(args):
     try:
         model.print_total_tokens_usage()
     except:
-        pass
+        logger.warning("Model does not support token usage tracking.")
     save_results(cfg, structure_result, args.result_dir)
     logger.info("Processing completed.")
     logger.info("Results saved to %s", args.result_dir)

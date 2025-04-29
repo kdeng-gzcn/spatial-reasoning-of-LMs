@@ -1,89 +1,81 @@
 import os
 import glob
 import json
+import logging
 from pathlib import Path
 
 import torchvision.io as io
 from torch.utils.data import Dataset
 
-class ScanNetppSpatialReasoningDataset(Dataset):
+class ScanNetppCameraMotionDataset(Dataset):
     def __init__(self, data_root_dir: str, **kwargs) -> None:
-        self.data_root_dir = data_root_dir
-        self.split = kwargs.split
+        self.logger = logging.getLogger(__name__)
+        self.data_root_dir = Path(data_root_dir)
+        if kwargs["split"]:
+            self.split = kwargs["split"]
+        else:
+            self.logger.warning("No split provided, defaulting to 'all'")
+            self.split = "all"
 
         self.data = []
+        self.dataset_length_count = 0
         self._load_image_pairs(self.data_root_dir)
 
     def _load_image_pairs(self, data_dir: str) -> None:
-        assert isinstance(data_dir, str), "Error in data_dir"
         if self.split == "all":
-            for dof in os.listdir(self.data_root_dir):
-                dof_path = os.path.join(self.data_root_dir, dof)
-                if not os.path.isdir(dof_path):
-                    continue 
+            for dof in data_dir.iterdir():
+                if not dof.is_dir():
+                    continue
 
-                for scene in os.listdir(dof_path):
-                    scene_path = os.path.join(dof_path, scene)
-                    if not os.path.isdir(scene_path):
-                        continue  
+                for hash_id in dof.iterdir():
+                    if not hash_id.is_dir():
+                        continue
 
-                    for seq in os.listdir(scene_path):
-                        seq_path = os.path.join(scene_path, seq)
-                        if not os.path.isdir(seq_path):
-                            continue  
-
-                        for pair in os.listdir(seq_path):
-                            pair_path = os.path.join(seq_path, pair)
-                            if not os.path.isdir(pair_path):
-                                continue
-
-                            self.data.append(pair_path)
-
-        elif self.split in ["tx", "ty", "tz", "theta", "phi", "psi"]:
-            subset_path = os.path.join(self.data_root_dir, f"{self.split}_significant")
-            for scene in os.listdir(subset_path):
-                scene_path = os.path.join(subset_path, scene)
-                if not os.path.isdir(scene_path):
-                    continue  
-
-                for seq in os.listdir(scene_path):
-                    seq_path = os.path.join(scene_path, seq)
-                    if not os.path.isdir(seq_path):
-                        continue  
-
-                    for pair in os.listdir(seq_path):
-                        pair_path = os.path.join(seq_path, pair)
-                        if not os.path.isdir(pair_path):
+                    for pair in hash_id.iterdir():
+                        if not pair.is_dir():
                             continue
 
-                        self.data.append(pair_path)
+                        self.data.append(pair)
 
+        elif self.split in ["tx", "ty", "tz", "theta", "phi", "psi"]:
+            split_path = data_dir / f"{self.split}_significant"
+            if not split_path.exists():
+                self.logger.error(f"Split path {split_path} does not exist.")
+                return
+            
+            for hash_id in split_path.iterdir():
+                if not hash_id.is_dir():
+                    continue
+
+                for pair in hash_id.iterdir():
+                    if not pair.is_dir():
+                        continue
+
+                    if self.dataset_length_count > 150:
+                        self.logger.warning(f"Dataset length count exceeded 150 for {self.split} split.")
+                        return
+
+                    self.data.append(pair)
+                    self.dataset_length_count += 1
+                    
         else:
-            print(f"{self.split} Not Recognized")
+            self.logger.error(f"Invalid split: {self.split}. Must be 'all' or one of the DOFs.")
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         pair_path = self.data[idx]
+        source_path = pair_path / "source"
+        target_path = pair_path / "target"
 
-        source_path = os.path.join(pair_path, "source")
-        target_path = os.path.join(pair_path, "target")
-
-        source_image_files = glob.glob(os.path.join(source_path, "*.color.png"))
-        target_image_files = glob.glob(os.path.join(target_path, "*.color.png"))
-
-        if not source_image_files or not target_image_files:
-            raise FileNotFoundError(f"Missing images in {pair_path}")
-
-        source_image_path = source_image_files[0]
-        target_image_path = target_image_files[0]
+        source_image_path = next(source_path.glob("*.jpg"))
+        target_image_path = next(target_path.glob("*.jpg"))
 
         source_image = io.read_image(source_image_path)
         target_image = io.read_image(target_image_path)
 
-        metadata_path = os.path.join(pair_path, "metadata.json")
-
+        metadata_path = pair_path / "metadata.json"
         with open(metadata_path, "r") as f:
             metadata = json.load(f)
 

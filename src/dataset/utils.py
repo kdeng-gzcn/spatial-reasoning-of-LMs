@@ -1,18 +1,18 @@
 from src.dataset import (
     SevenScenesImageDataset,
-    SevenScenesRelativePoseDataset,
-    ScanNetSpatialReasoningDataset,
-    ScanNetYawDataset,
-    ScanNetppSpatialReasoningDataset,
+    SevenScenesViewShiftDataset,
+    ScanNetCameraMotionDataset,
+    ScanNetViewShiftDataset,
+    ScanNetppCameraMotionDataset,
 )
 
 def load_dataset(dataset_name: str, data_root_dir: str, **kwargs) -> object:
     dataset_mapping = {
-        "7 Scenes": SevenScenesImageDataset,
-        "relative-pose-7-scenes": SevenScenesRelativePoseDataset,
-        "spatial-reasoning-scannet": ScanNetSpatialReasoningDataset,
-        "relative-pose-scannet": ScanNetYawDataset,
-        "spatial-reasoning-scannetpp": ScanNetppSpatialReasoningDataset,
+        "single-dof-camera-motion-7-scenes": SevenScenesImageDataset,
+        "obj-centered-view-shift-7-scenes": SevenScenesViewShiftDataset,
+        "single-dof-camera-motion-scannet": ScanNetCameraMotionDataset,
+        "obj-centered-view-shift-scannet": ScanNetViewShiftDataset,
+        "single-dof-camera-motion-scannetpp": ScanNetppCameraMotionDataset,
     }
 
     if dataset_name not in dataset_mapping:

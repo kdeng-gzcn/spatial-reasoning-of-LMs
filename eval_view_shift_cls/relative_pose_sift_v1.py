@@ -14,7 +14,6 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 from src.dataset.utils import load_dataset
 from src.logging.logging_config import setup_logging
-from config.camera_intrinsic import K
 
 def parse_args():
     parser = argparse.ArgumentParser(description="SIFT Relative Pose Estimation")
@@ -49,7 +48,7 @@ def match_descriptors(cfg: dict, des1, des2) -> list:
     return [m for m, n in matches if m.distance < cfg["lowes_match_ratio"] * n.distance]
 
 
-def estimate_pose(cfg: dict, kp1, kp2, matches) -> Tuple[np.ndarray, np.ndarray]:
+def estimate_pose(cfg: dict, kp1, kp2, matches, K) -> Tuple[np.ndarray, np.ndarray]:
     if len(matches) < cfg["min_match_count"]:
         logging.warning("Not enough good matches.")
         return None, None
@@ -85,13 +84,13 @@ def save_results(results: list, result_dir: str) -> None:
     result_dir.mkdir(parents=True, exist_ok=True)
     logging.info("Saving results to %s", result_dir)
 
-    with jsonlines.open(result_dir / "relative_pose_results.jsonl", mode='w') as writer:
+    with jsonlines.open(result_dir / "view_shift_results.jsonl", mode='w') as writer:
         for result in results:
             writer.write(result)
 
     df = pd.DataFrame(results)
-    df.to_csv(result_dir / "relative_pose_results.csv", index=False) 
-    logging.info("Results saved to %s", result_dir / "relative_pose_results.csv") 
+    df.to_csv(result_dir / "view_shift_results.csv", index=False) 
+    logging.info("Results saved to %s", result_dir / "view_shift_results.csv") 
 
     # compute metrics and save results
     y_true = df["label"].values
@@ -126,7 +125,7 @@ def main(args):
     logger.info("Using result directory: %s", args.result_dir)
 
     cfg = yaml.safe_load(Path(args.yaml_file).read_text())
-    dataset = load_dataset("relative-pose-7-scenes", data_root_dir=args.data_dir)
+    dataset = load_dataset(Path(args.data_dir).parent.name, data_root_dir=args.data_dir)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
     dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
 
@@ -139,6 +138,22 @@ def main(args):
                 src_img = src_img.permute(1, 2, 0).cpu().numpy()  # Convert to HWC format
                 tgt_img = tgt_img.permute(1, 2, 0).cpu().numpy()
 
+                if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
+                    metadata_prefix = {
+                        "scene": item["metadata"]["scene"],
+                        "seq": item["metadata"]["seq"],
+                    }
+                    K = np.loadtxt("config/eval_view_shift/intrinsic-7-scene.txt", delimiter=",")
+                elif Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
+                    metadata_prefix = {
+                        "scene": item["metadata"]["scene"],
+                    }
+                    K = np.loadtxt(Path("data/scannet-v2/scans_test") / item["metadata"]["scene"] / "intrinsic" / "intrinsic_color.txt")
+                    K = K[:3, :3]
+                else:
+                    metadata_prefix = {}
+                    logger.error(f"Invalid dataset: {Path(args.data_dir).parent.name}.")
+
                 kp1, des1 = extract_keypoints_and_descriptors(sift, tgt_img)
                 kp2, des2 = extract_keypoints_and_descriptors(sift, src_img)
 
@@ -150,13 +165,12 @@ def main(args):
                     continue
 
                 matches = match_descriptors(cfg, des1, des2)
-                Rmat, t = estimate_pose(cfg, kp1, kp2, matches)
+                Rmat, t = estimate_pose(cfg, kp1, kp2, matches, K)
 
                 pred = pose2prediction(Rmat, t)
                 
                 structure_result.append({
-                    "scene": item["metadata"]["scene"],
-                    "seq": item["metadata"]["seq"],
+                    **metadata_prefix,
                     "pair": item["metadata"]["pair"],
                     "label": item["metadata"]["phi_text"],
                     "pred": pred["phi_text"],
@@ -166,9 +180,21 @@ def main(args):
 
             except Exception as e:
                 logger.error(f"Error processing batch: {e}")
+                if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
+                    metadata_prefix = {
+                        "scene": item["metadata"]["scene"],
+                        "seq": item["metadata"]["seq"],
+                    }
+                elif Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
+                    metadata_prefix = {
+                        "scene": item["metadata"]["scene"],
+                    }
+                else:
+                    metadata_prefix = {}
+                    logger.error(f"Invalid dataset: {Path(args.data_dir).parent.name}.")
+
                 structure_result.append({
-                    "scene": item["metadata"]["scene"],
-                    "seq": item["metadata"]["seq"],
+                    **metadata_prefix,
                     "pair": item["metadata"]["pair"],
                     "label": item["metadata"]["phi_text"],
                     "pred": "error",
@@ -176,6 +202,7 @@ def main(args):
                     "pred_val": None,
                 })
                 continue
+
     save_results(structure_result, args.result_dir)
     logger.info("Processing completed.")
     logger.info("Results saved to %s", args.result_dir)

@@ -18,10 +18,9 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 from src.dataset.utils import load_dataset
 from src.logging.logging_config import setup_logging
-from config.camera_intrinsic import K as K_intrinsic
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="SIFT Relative Pose Estimation")
+    parser = argparse.ArgumentParser(description="LoFTR Relative Pose Estimation")
     parser.add_argument(
         "--yaml_file",
         type=str,
@@ -67,13 +66,13 @@ def save_results(results: list, result_dir: str) -> None:
     result_dir.mkdir(parents=True, exist_ok=True)
     logging.info("Saving results to %s", result_dir)
 
-    with jsonlines.open(result_dir / "relative_pose_results.jsonl", mode='w') as writer:
+    with jsonlines.open(result_dir / "view_shift_results.jsonl", mode='w') as writer:
         for result in results:
             writer.write(result)
 
     df = pd.DataFrame(results)
-    df.to_csv(result_dir / "relative_pose_results.csv", index=False) 
-    logging.info("Results saved to %s", result_dir / "relative_pose_results.csv") 
+    df.to_csv(result_dir / "view_shift_results.csv", index=False) 
+    logging.info("Results saved to %s", result_dir / "view_shift_results.csv") 
 
     # compute metrics and save results
     y_true = df["label"].values
@@ -108,7 +107,7 @@ def main(args):
     logger.info("Using result directory: %s", args.result_dir)
 
     cfg = yaml.safe_load(Path(args.yaml_file).read_text())
-    dataset = load_dataset("relative-pose-7-scenes", data_root_dir=args.data_dir)
+    dataset = load_dataset(Path(args.data_dir).parent.name, data_root_dir=args.data_dir)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
     dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
 
@@ -128,6 +127,22 @@ def main(args):
 
                 src_img = K.geometry.resize(src_img, (480, 640), antialias=True)
                 tgt_img = K.geometry.resize(tgt_img, (480, 640), antialias=True)
+
+                if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
+                    metadata_prefix = {
+                        "scene": item["metadata"]["scene"],
+                        "seq": item["metadata"]["seq"],
+                    }
+                    K_intrinsic = np.loadtxt("config/eval_view_shift/intrinsic-7-scene.txt", delimiter=",")
+                elif Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
+                    metadata_prefix = {
+                        "scene": item["metadata"]["scene"],
+                    }
+                    K_intrinsic = np.loadtxt(Path("data/scannet-v2/scans_test") / item["metadata"]["scene"] / "intrinsic" / "intrinsic_color.txt")
+                    K_intrinsic = K_intrinsic[:3, :3]
+                else:
+                    metadata_prefix = {}
+                    logger.error(f"Invalid dataset: {Path(args.data_dir).parent.name}.")
 
                 input_dict = {
                     "image0": K.color.rgb_to_grayscale(tgt_img), # image0 is target image
@@ -153,8 +168,7 @@ def main(args):
                 pred = pose2prediction(Rmat, t.squeeze())
                 
                 structure_result.append({
-                    "scene": item["metadata"]["scene"],
-                    "seq": item["metadata"]["seq"],
+                    **metadata_prefix,
                     "pair": item["metadata"]["pair"],
                     "label": item["metadata"]["phi_text"],
                     "pred": pred["phi_text"],
@@ -164,9 +178,21 @@ def main(args):
 
             except Exception as e:
                 logger.error(f"Error processing batch: {e}")
+                if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
+                    metadata_prefix = {
+                        "scene": item["metadata"]["scene"],
+                        "seq": item["metadata"]["seq"],
+                    }
+                elif Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
+                    metadata_prefix = {
+                        "scene": item["metadata"]["scene"],
+                    }
+                else:
+                    metadata_prefix = {}
+                    logger.error(f"Invalid dataset: {Path(args.data_dir).parent.name}.")
+                    
                 structure_result.append({
-                    "scene": item["metadata"]["scene"],
-                    "seq": item["metadata"]["seq"],
+                    **metadata_prefix,
                     "pair": item["metadata"]["pair"],
                     "label": item["metadata"]["phi_text"],
                     "pred": "error",
