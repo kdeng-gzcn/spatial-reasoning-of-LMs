@@ -1,0 +1,20 @@
+{
+    "scene": "stairs",
+    "seq": "seq-05",
+    "pair": "000294-000360",
+    "tx": -0.137995,
+    "ty": -0.302126,
+    "tz": 0.13415,
+    "theta": 0.612198,
+    "phi": -0.093629,
+    "psi": -1.628274,
+    "tx_text": "left",
+    "ty_text": "up",
+    "tz_text": "forward",
+    "theta_text": "upward",
+    "phi_text": "leftward",
+    "psi_text": "counterclockwise",
+    "significance": "ty",
+    "significance_text": "up",
+    "significance_value": 0.302126
+}

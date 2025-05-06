@@ -1,0 +1,20 @@
+{
+    "scene": "fire",
+    "seq": "seq-03",
+    "pair": "000671-000688",
+    "tx": -0.122226,
+    "ty": 0.09549,
+    "tz": 0.02556,
+    "theta": 2.850272,
+    "phi": 3.02936,
+    "psi": 10.615728,
+    "tx_text": "left",
+    "ty_text": "down",
+    "tz_text": "forward",
+    "theta_text": "upward",
+    "phi_text": "rightward",
+    "psi_text": "clockwise",
+    "significance": "psi",
+    "significance_text": "clockwise",
+    "significance_value": 10.615728
+}

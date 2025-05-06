@@ -1,0 +1,2 @@
+scene,seq,pair,tx,ty,tz,theta,phi,psi,tx_text,ty_text,tz_text,theta_text,phi_text,psi_text,significance,significance_text,significance_value
+chess,seq-01,000544-000562,-0.146716,-0.03221,0.145271,-0.183825,15.294713,2.502165,left,up,forward,downward,rightward,head towards right,phi,rightward,15.294713

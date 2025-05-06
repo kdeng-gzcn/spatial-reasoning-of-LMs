@@ -1,0 +1,2 @@
+scene,seq,pair,tx,ty,tz,theta,phi,psi,tx_text,ty_text,tz_text,theta_text,phi_text,psi_text,significance,significance_text,significance_value
+fire,seq-03,000950-000970,-0.035398,0.01025,-0.041357,0.602731,4.300334,10.0725,left,down,backward,upward,rightward,head towards right,psi,head towards right,10.0725

@@ -1,0 +1,2 @@
+scene,seq,pair,tx,ty,tz,theta,phi,psi,tx_text,ty_text,tz_text,theta_text,phi_text,psi_text,significance,significance_text,significance_value
+pumpkin,seq-07,000818-000887,0.583565,0.054053,0.013478,1.695408,0.897273,-2.988507,right,down,forward,upward,rightward,head towards left,tx,right,0.583565

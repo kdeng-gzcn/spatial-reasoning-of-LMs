@@ -1,0 +1,20 @@
+{
+    "scene": "office",
+    "seq": "seq-03",
+    "pair": "000499-000536",
+    "tx": 0.059674,
+    "ty": -0.088167,
+    "tz": 0.050138,
+    "theta": 10.038895,
+    "phi": -2.156543,
+    "psi": -2.752193,
+    "tx_text": "right",
+    "ty_text": "up",
+    "tz_text": "forward",
+    "theta_text": "upward",
+    "phi_text": "leftward",
+    "psi_text": "counterclockwise",
+    "significance": "theta",
+    "significance_text": "upward",
+    "significance_value": 10.038895
+}

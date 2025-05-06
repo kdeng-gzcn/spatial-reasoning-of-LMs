@@ -1,0 +1,20 @@
+{
+    "scene": "chess",
+    "seq": "seq-01",
+    "pair": "000544-000562",
+    "tx": -0.146716,
+    "ty": -0.03221,
+    "tz": 0.145271,
+    "theta": -0.183825,
+    "phi": 15.294713,
+    "psi": 2.502165,
+    "tx_text": "left",
+    "ty_text": "up",
+    "tz_text": "forward",
+    "theta_text": "downward",
+    "phi_text": "rightward",
+    "psi_text": "clockwise",
+    "significance": "phi",
+    "significance_text": "rightward",
+    "significance_value": 15.294713
+}

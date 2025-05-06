@@ -1,0 +1,20 @@
+{
+    "scene": "redkitchen",
+    "seq": "seq-03",
+    "pair": "000068-000141",
+    "tx": 0.125018,
+    "ty": -0.035629,
+    "tz": 0.680874,
+    "theta": -1.126913,
+    "phi": 4.914676,
+    "psi": 1.463025,
+    "tx_text": "right",
+    "ty_text": "up",
+    "tz_text": "forward",
+    "theta_text": "downward",
+    "phi_text": "rightward",
+    "psi_text": "clockwise",
+    "significance": "tz",
+    "significance_text": "forward",
+    "significance_value": 0.680874
+}

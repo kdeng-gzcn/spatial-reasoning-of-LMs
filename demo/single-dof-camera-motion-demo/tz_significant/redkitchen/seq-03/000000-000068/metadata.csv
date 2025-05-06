@@ -1,0 +1,2 @@
+scene,seq,pair,tx,ty,tz,theta,phi,psi,tx_text,ty_text,tz_text,theta_text,phi_text,psi_text,significance,significance_text,significance_value
+redkitchen,seq-03,000000-000068,0.106648,-0.034038,0.507419,2.945062,-4.793902,0.480942,right,up,forward,upward,leftward,head towards right,tz,forward,0.507419
