@@ -1,0 +1,20 @@
+{
+    "scene": "pumpkin",
+    "seq": "seq-01",
+    "pair": "000745-000765",
+    "tx": 0.030046,
+    "ty": 0.022175,
+    "tz": 0.027172,
+    "theta": 10.030935,
+    "phi": 1.248545,
+    "psi": 0.991997,
+    "tx_text": "right",
+    "ty_text": "down",
+    "tz_text": "forward",
+    "theta_text": "upward",
+    "phi_text": "rightward",
+    "psi_text": "clockwise",
+    "significance": "theta",
+    "significance_text": "upward",
+    "significance_value": 10.030935
+}

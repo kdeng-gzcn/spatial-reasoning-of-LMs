@@ -1,0 +1,2 @@
+scene,seq,pair,tx,ty,tz,theta,phi,psi,tx_text,ty_text,tz_text,theta_text,phi_text,psi_text,significance,significance_text,significance_value
+office,seq-06,000449-000473,-0.146849,-0.040724,0.098738,2.275956,1.200015,10.284685,left,up,forward,upward,rightward,head towards right,psi,head towards right,10.284685

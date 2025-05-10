@@ -1,0 +1,18 @@
+{
+    "scene": "scene0724_00",
+    "pair": "000616-000666",
+    "tx": 0.315173,
+    "ty": 0.059674,
+    "tz": -0.027408,
+    "theta": 18.686976,
+    "phi": -29.132912,
+    "psi": -33.994858,
+    "tx_text": "right",
+    "ty_text": "down",
+    "tz_text": "backward",
+    "theta_text": "upward",
+    "phi_text": "leftward",
+    "psi_text": "counterclockwise",
+    "distance": 141.537819,
+    "angle": 35.764706
+}

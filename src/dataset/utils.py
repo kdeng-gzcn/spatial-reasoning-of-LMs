@@ -13,6 +13,9 @@ def load_dataset(dataset_name: str, data_root_dir: str, **kwargs) -> object:
         "single-dof-camera-motion-scannet": ScanNetCameraMotionDataset,
         "obj-centered-view-shift-scannet": ScanNetViewShiftDataset,
         "single-dof-camera-motion-scannetpp": ScanNetppCameraMotionDataset,
+
+        "obj-centered-view-shift-demo": ScanNetViewShiftDataset,
+        "single-dof-camera-motion-demo": SevenScenesImageDataset,
     }
 
     if dataset_name not in dataset_mapping:

@@ -1,0 +1,20 @@
+{
+    "scene": "heads",
+    "seq": "seq-01",
+    "pair": "000600-000631",
+    "tx": 0.14845,
+    "ty": 0.056595,
+    "tz": -0.00415,
+    "theta": -2.118012,
+    "phi": 15.701038,
+    "psi": 2.396571,
+    "tx_text": "right",
+    "ty_text": "down",
+    "tz_text": "backward",
+    "theta_text": "downward",
+    "phi_text": "rightward",
+    "psi_text": "clockwise",
+    "significance": "phi",
+    "significance_text": "rightward",
+    "significance_value": 15.701038
+}
