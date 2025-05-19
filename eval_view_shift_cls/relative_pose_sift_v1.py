@@ -172,10 +172,14 @@ def main(args):
                 structure_result.append({
                     **metadata_prefix,
                     "pair": item["metadata"]["pair"],
-                    "label": item["metadata"]["phi_text"],
-                    "pred": pred["phi_text"],
-                    "label_val": np.abs(item["metadata"]["phi"]),
-                    "pred_val": np.abs(pred["phi"]),
+                    # "label": item["metadata"]["phi_text"],
+                    "label": item["metadata"]["tx_text"], # v2
+                    # "pred": pred["phi_text"],
+                    "pred": pred["tx_text"], # v2
+                    # "label_val": np.abs(item["metadata"]["phi"]),
+                    "label_val": item["metadata"]["tx"], # v2
+                    # "pred_val": np.abs(pred["phi"]),
+                    "pred_val": np.abs(pred["tx"]), # v2
                 })
 
             except Exception as e:
@@ -196,9 +200,11 @@ def main(args):
                 structure_result.append({
                     **metadata_prefix,
                     "pair": item["metadata"]["pair"],
-                    "label": item["metadata"]["phi_text"],
+                    # "label": item["metadata"]["phi_text"],
+                    "label": item["metadata"]["tx_text"], # v2
                     "pred": "error",
-                    "label_val": np.abs(item["metadata"]["phi"]),
+                    # "label_val": np.abs(item["metadata"]["phi"]),
+                    "label_val": item["metadata"]["tx"], # v2
                     "pred_val": None,
                 })
                 continue

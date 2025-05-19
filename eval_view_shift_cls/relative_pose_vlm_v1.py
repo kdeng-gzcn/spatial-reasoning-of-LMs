@@ -14,7 +14,8 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from src.dataset.utils import load_dataset
 from src.models.utils import load_model
 from src.logging.logging_config import setup_logging
-from config.eval_view_shift.vlm_relative_pose_prompt_v1 import task_prompt, short_answer_dict, detailed_answer_dict
+# from config.eval_view_shift.vlm_relative_pose_prompt_v1 import task_prompt, short_answer_dict, detailed_answer_dict
+from config.eval_view_shift.vlm_view_shift_prompt_v2 import task_prompt, short_answer_dict, detailed_answer_dict
 
 # set seed
 import random
@@ -183,9 +184,11 @@ def main(args):
                 structure_result.append({
                     **metadata_prefix,
                     "pair": item["metadata"]["pair"],
-                    "label": item["metadata"]["phi_text"],
+                    # "label": item["metadata"]["phi_text"],
+                    "label": item["metadata"]["tx_text"], # v2
                     "pred": pred["ans_text"],
-                    "label_val": np.abs(item["metadata"]["phi"]),
+                    # "label_val": np.abs(item["metadata"]["phi"]),
+                    "label_val": item["metadata"]["tx"], # v2
                 })
 
             except Exception as e:
@@ -196,6 +199,7 @@ def main(args):
         model.print_total_tokens_usage()
     except:
         logger.warning("Model does not support token usage tracking.")
+
     save_results(cfg, structure_result, args.result_dir)
     logger.info("Processing completed.")
     logger.info("Results saved to %s", args.result_dir)
