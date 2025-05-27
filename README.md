@@ -1,7 +1,8 @@
 # Evaluation of Spatial Reasoning
 ## Task: Single-DoF Camera Motion Classification
 This benchmark includes tasks like judging how camera moves. The camera does not move randomly, for each task, the camera only moves in one DoF, which leads the view a slight difference from source view to target view.
-> - [] sdfadsf
+> - [ ] sdlknflkadsjf
+> - [x] sdkjfladsfjadsfnh
 ## Task: Object-Centered View Shift Classification
 This benchmark is a more common case in computer vision or robot navigation. The benchmark are also consist of tasks of judging camera movement, but more focus on leftward/rightward translation and rotation of the camera. In this task, we constrain that, there must be some objects centered in both views, and the angles made by source camera, object, target camera should be large to make views a big difference.
 ## Env
