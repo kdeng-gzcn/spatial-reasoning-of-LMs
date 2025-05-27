@@ -158,6 +158,8 @@ class GPTInstruct:
     def __init__(self, name: str):
         super().__init__()
         self.model_name = name
+        if "gpt-4o-text-only" in name:
+            self.model_name = "gpt-4o"
         self.messages = [
             {
                 "role": "system", 
@@ -183,6 +185,7 @@ class GPTInstruct:
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=self.messages,
+            temperature=0, # temp. fixed at 0
         )
         response = response.choices[0].message.content
 

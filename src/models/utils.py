@@ -15,6 +15,7 @@ def load_model(model_name):
         "Qwen/Qwen2.5-7B-Instruct": QwenInstruct(name=model_name),
         "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B": QwenInstruct(name=model_name),
         "gpt-4": GPTInstruct(name=model_name), # llm
+        "gpt-4o-text-only": GPTInstruct(name=model_name),
         # "llava-hf/llava-v1.6-mistral-7b-hf": LlavaNextInstruct(name=model_name), 
 
         "microsoft/Phi-3.5-vision-instruct": PhiVisionInstruct(name=model_name),

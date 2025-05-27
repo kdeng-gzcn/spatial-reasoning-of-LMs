@@ -9,6 +9,7 @@ docs/
 ScanNet/
 
 __pycache__
+.ipynb_checkpoints
 
 .env
 

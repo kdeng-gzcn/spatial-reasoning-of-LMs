@@ -641,6 +641,7 @@ class GPTVisionInstruct(VLMTemplate):
             model=self.model_name,
             messages=self.conversation,
             max_tokens=1024,
+            temperature=0, # temp. fixed at 0
         )
         self._collect_completions(completiion)
         # self._print_tokens_usage(completiion)

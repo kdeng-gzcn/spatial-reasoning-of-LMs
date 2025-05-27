@@ -1,7 +1,7 @@
 ## Demo Dataset
 
 ### Single-DoF
-length: 37
+length: 29
 
 ### Obj-Centered
-length: 29
+length: 37
