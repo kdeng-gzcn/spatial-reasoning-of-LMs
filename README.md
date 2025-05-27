@@ -1,10 +1,26 @@
 # Evaluation of Spatial Reasoning
 ## Task: Single-DoF Camera Motion Classification
 This benchmark includes tasks like judging how camera moves. The camera does not move randomly, for each task, the camera only moves in one DoF, which leads the view a slight difference from source view to target view.
-> - [ ] sdlknflkadsjf
-> - [x] sdkjfladsfjadsfnh
+> - [ ] make new dataset with larger threshold (so far, view changes are slight)
 ## Task: Object-Centered View Shift Classification
 This benchmark is a more common case in computer vision or robot navigation. The benchmark are also consist of tasks of judging camera movement, but more focus on leftward/rightward translation and rotation of the camera. In this task, we constrain that, there must be some objects centered in both views, and the angles made by source camera, object, target camera should be large to make views a big difference.
+> - [ ] filter out overlapped dataset
+## Strategy
+### VLM-Only
+An intuitive way to evaluate is to provide a task description prompt to VLM, and ask VLM to do a multi-choice classification, and see if VLM can find the correct answer.
+> - [ ] try to figure out hou many choices as candidates is the best
+### Multi-Agent (LLM + VLM)
+Based on our ablation study, we find that if the caption of images is given (including the depth information is the best), there are might be improvements. Also, we hope LLM here to come up with a better reasonning.
+> - [ ] refine the pipeline, and the prompt
+## Ablation Study
+Once we find that, even SOTA VLM fails in these easy spatial reasoning tasks. (inferring the camera motion based on pair of images), we did an error analysis and ablation study on demo dataset to find out the underlying problem.
+### Error Analysis
+We define the error type for failed cases. And manually find a distribution of error types. (This is conducted on demo dataset, obj-centered task, 37 samples)
+### Refine with caption
+We also conducted experiments with different level description (image caption), and see how LLM performs on it, and we compare with VLM's performance. The results reveal that, if the LLM with detailed caption of image, they could do better than VLM. (This is conducted on demo dataset, obj-centered task, 37 samples) But the prompt should at least provide depth information, i.e. obj A is occluded by obj B.
+### Choice Preference
+We also find that, language models have a strong preference in choosing one of the options, e.g. gpt-do prefer rightward answer.
+# Usage
 ## Env
 #### SpaceLLaVA
 ```bash
@@ -27,12 +43,11 @@ pip install git+https://github.com/huggingface/transformers accelerate
 pip install qwen-vl-utils[decord]==0.0.8
 ```
 
-## Usage
-### Generate benchmark based on 3D dataset
+## Generate benchmark based on 3D dataset
 ```bash
 bash xxx
 ```
-### Evaluate Vision Language Models' performance on customed benchmark
+## Evaluate Vision Language Models' performance on customed benchmark
 - task1
 ```bash
 bash xxx
@@ -47,9 +62,9 @@ run demo on pair images:
 bash scripts/run_tests.sh
 ```
 
-## Datset
-### RGBD-7-Scenes
-### ScanNet-V2
+## Datset Download
+#### RGBD-7-Scenes
+#### ScanNet-V2
 this script is to download dataset
 ```bash
 bash download_scannet_v2.sh
@@ -63,8 +78,6 @@ git clone https://github.com/ScanNet/ScanNet.git
 ```bash
 bash data/scannet-v2/reader.sh 
 ```
-
-### ScanNet++
+#### ScanNet++
 this script is to download dataset
-
 
