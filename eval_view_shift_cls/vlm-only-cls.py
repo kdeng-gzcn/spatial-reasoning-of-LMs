@@ -15,7 +15,7 @@ from src.dataset.utils import load_dataset
 from src.models.utils import load_model
 from src.logging.logging_config import setup_logging
 # from config.eval_view_shift.vlm_relative_pose_prompt_v1 import task_prompt, short_answer_dict, detailed_answer_dict
-from config.eval_view_shift.vlm_view_shift_prompt_v2 import task_prompt, short_answer_dict, detailed_answer_dict
+from config.eval_view_shift.vlm_view_shift_left_right_prompt_v2 import task_prompt, short_answer_dict, detailed_answer_dict
 
 # set seed
 import random

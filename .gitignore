@@ -1,6 +1,7 @@
 .cache/
 archive/
 benchmark/
+benchmark-v2/
 data/
 notebook/
 result/

@@ -112,6 +112,7 @@ class MultiAgentsPairImageInputReasoning(MultiAgentsReasoningTemplate):
                             llm_questions_to_vlm = self.spatial_question_prompter(llm_questions_to_vlm)
                         self._full_history_append(full_history, metadata, idx+1, "LLM", "VLM", llm_questions_to_vlm)
 
+                    ### vlm inference
                     vlm_answers_to_llm, opt_map = self.spatial_reasoning_prompter(
                         self.VLM.pipeline(images, llm_questions_to_vlm)
                     )
@@ -119,9 +120,11 @@ class MultiAgentsPairImageInputReasoning(MultiAgentsReasoningTemplate):
                     if not self.is_vlm_keep_hisroty:
                         self.VLM._clear_history() # for lower cost on memory, clear up history in VLM
 
+                    ### llm inference
                     llm_reasoning = self.LLM.pipeline(vlm_answers_to_llm)
                     self._full_history_append(full_history, metadata, idx+1, "LLM", "User or VLM", llm_reasoning)
 
+                    ### collect result for this turn
                     pred = self.parser(llm_reasoning, opt_map)
                     self._reasoning_result_append(reasoning_result, metadata, idx+1, pred)
         

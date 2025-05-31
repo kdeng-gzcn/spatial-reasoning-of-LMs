@@ -18,13 +18,13 @@ huggingface-cli login --token "${HUGGINGFACE_TOKEN}"
 #     done
 # done
 
-for dataset in scannet; do
+for dataset in 7-scenes; do
     for model_id in gpt-4o; do
         for min_angle in 60; do
             echo "Running experiment with dataset=${dataset}, model_id=${model_id}, and min_angle=${min_angle}"
             data_dir=benchmark/obj-centered-view-shift-${dataset}/min-angle-${min_angle}-deg
-            result_dir=result/demo/v2-left-right-camera-movement/${dataset}/${model_id}/min-angle-${min_angle}-deg
-            python eval_view_shift_cls/relative_pose_vlm_v1.py \
+            result_dir=result/demo/left-right-camera-movement/${dataset}/${model_id}/min-angle-${min_angle}-deg
+            python eval_view_shift_cls/vlm-only-cls.py \
                 --data_dir "$data_dir" \
                 --result_dir "$result_dir" \
                 --model_id "$model_id" &

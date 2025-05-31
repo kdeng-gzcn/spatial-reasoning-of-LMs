@@ -1,5 +1,5 @@
 task_prompt = """You are given two images:  
-- The **source image (the first image you see)** is captured from a first-person view, as if you're holding a camera and taking a photo while approaching an object.  
+- The **source image (the first image you see)** is captured from a first-person view, as if you're holding a camera and taking a photo while focus on an object.  
 - The **target image (the second image you see)** shows the same scene after you've walked around and reoriented the camera to face the central object directly.  
 
 Your goal is to infer the **major camera translation** (i.e., the movement of the camera in space) that occurred between the two views.  
@@ -8,7 +8,7 @@ Input:
 - Source Image and Target Image: Both depict roughly the same scene but from different viewpoints.
 
 Your Task:  
-Based on visible changes in perspective, alignment of the central object, and spatial arrangement of background elements, determine the most likely camera translation.
+Based on visible changes in perspective, alignment of the objects, and spatial arrangement of background elements, determine the most likely camera translation.
 
 Possible Answers:
 - (0) {opt1}
@@ -22,7 +22,7 @@ Response Format:
 
 Example Response:
 <rsn>We are in the left-side of the object in the source image, and we turn to the center of the object in the target image, indicating a right camera translation.</rsn>
-<ans>0</ans>
+<ans>number of the option you choose</ans>
 """
 
 task_prompt_ablation = """You are given two images:  

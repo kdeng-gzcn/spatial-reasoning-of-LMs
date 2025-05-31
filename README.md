@@ -1,16 +1,48 @@
 # Evaluation of Spatial Reasoning
+## Rebuild
+### Config
+- [ ] use yacs for all config
+- [ ] specify how many nodes should i make? what is the structure of the nodes?
+### Dataset
+- [ ] metadata, translate one into image path, otherwise, i will keep using hard-code prefix for result dataframe
+### Prompt 
+- [ ] make a general template for all dataset subset
+- [ ] find a banalance between dataset subset prior, the reasoning skils and config
+- [ ] make a nicer candidate generater (shuffle, trap, labelencoder)
+### Pipeline
+- [x] multi agents
+### Parser
+- [ ] parser function for extracting answer
+- [ ] consider how prompt design?
+### Result Saver
+- [ ] save result with jsonlines in a stream way for each sample
+- [ ] make a nice inference_result dataframe, chat_history dataframe for multi-agents, consider how prompt design?
+- [ ] filter out the errors.jsonlines
+### Data Analysis
+- [ ] for final result (list of dict), do data analysis and record basic metrics
 ## Task: Single-DoF Camera Motion Classification
 This benchmark includes tasks like judging how camera moves. The camera does not move randomly, for each task, the camera only moves in one DoF, which leads the view a slight difference from source view to target view.
-> - [ ] make new dataset with larger threshold (so far, view changes are slight)
+> - [ ] make new dataset with larger threshold (now, the view changes are slight)
 ## Task: Object-Centered View Shift Classification
 This benchmark is a more common case in computer vision or robot navigation. The benchmark are also consist of tasks of judging camera movement, but more focus on leftward/rightward translation and rotation of the camera. In this task, we constrain that, there must be some objects centered in both views, and the angles made by source camera, object, target camera should be large to make views a big difference.
-> - [ ] filter out overlapped dataset
+> - [ ] filter out overlapped dataset, make it cleaner
 ## Strategy
 ### VLM-Only
 An intuitive way to evaluate is to provide a task description prompt to VLM, and ask VLM to do a multi-choice classification, and see if VLM can find the correct answer.
+
+1. zero-shot
+
+2. with dataset prior
+
+3. CoT
+
+4. VoT
+
 > - [ ] try to figure out hou many choices as candidates is the best
 ### Multi-Agent (LLM + VLM)
 Based on our ablation study, we find that if the caption of images is given (including the depth information is the best), there are might be improvements. Also, we hope LLM here to come up with a better reasonning.
+
+1. with dataset prior
 > - [ ] refine the pipeline, and the prompt
 ## Ablation Study
 Once we find that, even SOTA VLM fails in these easy spatial reasoning tasks. (inferring the camera motion based on pair of images), we did an error analysis and ablation study on demo dataset to find out the underlying problem.
