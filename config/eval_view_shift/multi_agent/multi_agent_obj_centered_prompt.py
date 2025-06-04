@@ -209,3 +209,14 @@ detailed_answer_dict = {
     "no movement": "No movement – The two images are completely identical with no even slight changes.",
     "unable to judge": "Unable to judge – This option should only be selected in cases where the images are severely corrupted or lack sufficient visual information."
 }
+
+
+
+
+
+
+
+
+
+
+

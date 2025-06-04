@@ -5,6 +5,48 @@
 - [ ] specify how many nodes should i make? what is the structure of the nodes?
 ### Dataset
 - [ ] metadata, translate one into image path, otherwise, i will keep using hard-code prefix for result dataframe
+
+current metadata:
+
+{
+    "scene": "scene0714_00",
+    "pair": "000875-001007",
+    "tx": 1.627007,
+    "ty": -0.725143,
+    "tz": 1.67707,
+    "theta": 1.2503,
+    "phi": -49.181585,
+    "psi": -28.36509,
+    "tx_text": "right",
+    "ty_text": "up",
+    "tz_text": "forward",
+    "theta_text": "upward",
+    "phi_text": "leftward",
+    "psi_text": "counterclockwise",
+    "distance": 290.646965,
+    "angle": 63.09769
+}
+
+expected metadata:
+
+{
+    "data_path": "/root/spatial-reasoning-of-LMs/scene0714_00/000875-001007",
+    "tx": 1.627007,
+    "ty": -0.725143,
+    "tz": 1.67707,
+    "theta": 1.2503,
+    "phi": -49.181585,
+    "psi": -28.36509,
+    "tx_text": "right",
+    "ty_text": "up",
+    "tz_text": "forward",
+    "theta_text": "upward",
+    "phi_text": "leftward",
+    "psi_text": "counterclockwise",
+    "distance": 290.646965,
+    "angle": 63.09769
+}
+
 ### Prompt 
 - [ ] make a general template for all dataset subset
 - [ ] find a banalance between dataset subset prior, the reasoning skils and config
