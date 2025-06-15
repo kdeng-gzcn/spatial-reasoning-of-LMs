@@ -1,0 +1,1 @@
+srun --gpus=1 --time=00:15:00 --pty /bin/bash --login

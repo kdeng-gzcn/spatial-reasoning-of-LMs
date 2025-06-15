@@ -1,41 +1,23 @@
-# my_project/config/config.py
-from yacs.config import CfgNode as CN
+"""
+might be merged later
+"""
 
+from config.default import cfg
 
-_C = CN()
+def update_cfg_with_args(cfg, args):
+    cfg.DATASET.ROOT_DIR = args.data_dir
+    cfg.MODEL.LLM_ID = args.llm_id
+    cfg.MODEL.VLM_ID = args.vlm_id
+    cfg.STRATEGY.NAME = args.strategy
+    cfg.DATASET.SPLIT = args.split
+    cfg.EXPERIMENT.SEED = args.seed
+    cfg.EXPERIMENT.RESULT_DIR = f"results/{args.strategy}_{args.split}_{args.llm_id}_{args.vlm_id}_seed{args.seed}"
+    return cfg
 
-### DATASET
-_C.DATASET = CN()
-_C.DATASET.SINGLE_DOF_CLS = CN()
-_C.DATASET.OBJ_CENTERED_CLS = CN()
-
-### MODEL
-_C.MODEL = CN()
-_C.MODEL.VLM = CN()
-_C.MODEL.LLM = CN()
-
-### STRATEGY
-_C.STRATEGY = CN()
-_C.STRATEGY.MULTI_AGENTS = CN()
-_C.STRATEGY.VLM_ONLY = CN()
-_C.STRATEGY.IS_TRAP = False  # whether to add trap option
-_C.STRATEGY.IS_SHUFFLE = True  # whether to shuffle options
-
-### TASK
-_C.TASK = CN()
-_C.TASK.NAME = "obj_centered_cls"
-_C.TASK.SPLIT = "translation" # or "rotation"
-
-### OTHER
- 
-
-
-# def get_cfg_defaults():
-#   """Get a yacs CfgNode object with default values for my_project."""
-#   # Return a clone so that the defaults will not be altered
-#   # This is for the "local variable" use pattern
-#   return _C.clone()
-
-# Alternatively, provide a way to import the defaults as
-# a global singleton:
-cfg = _C  # users can `from config import cfg`
+def get_cfg_from_args(args):
+    # cfg = get_cfg_defaults()
+    cfg.set_new_allowed(True)
+    cfg.merge_from_file(args.config_file) # merge with specific yaml file
+    cfg = update_cfg_with_args(cfg, args) # update from args
+    cfg.freeze()
+    return cfg

@@ -11,11 +11,21 @@ from typing import Tuple
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
+### load modules
 from src.dataset.utils import load_dataset
 from src.models.utils import load_model
 from src.logging.logging_config import setup_logging
+
 # from config.eval_view_shift.vlm_relative_pose_prompt_v1 import task_prompt, short_answer_dict, detailed_answer_dict
-from config.eval_view_shift.vlm_view_shift_left_right_prompt_v2 import task_prompt, short_answer_dict, detailed_answer_dict
+# from config.eval_view_shift.vlm_view_shift_left_right_prompt_v2 import task_prompt, short_answer_dict, detailed_answer_dict
+
+### load config
+from yacs.config import CfgNode as CN
+from config.default import cfg
+
+### load modules
+from src.prompt_generator import PromptGenerator
+from src.pipeline import SpatialReasoningPipeline
 
 # set seed
 import random
@@ -26,16 +36,12 @@ def set_seed(seed: int):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
 set_seed(42)
 
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="SIFT Relative Pose Estimation")
-    # parser.add_argument(
-    #     "--yaml_file",
-    #     type=str,
-    #     required=True,
-    #     help="Path to the YAML file"
-    # )
+    parser = argparse.ArgumentParser(description="obj-centered-cls VLM-Only")
     parser.add_argument(
         "--model_id",
         type=str,
@@ -54,62 +60,136 @@ def parse_args():
         required=True,
         help="Directory to save the results"
     )
+    parser.add_argument(
+        "--min_angle",
+        type=str,
+        required=True,
+        help="Minimum angle for the task, e.g., '0.0' for translation, '0.1' for phi"
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        required=True,
+        help="Dataset name, e.g., 'seven-scenes', 'scannet', 'scannetpp'"
+    )
     return parser.parse_args()
 
 
-def _shuffle_dict(dict: dict) -> dict:
-    keys = list(dict.keys())
-    np.random.shuffle(keys)
-    new_dict = {i: dict[keys[i]] for i in range(len(keys))}
-    return new_dict
+def _merge_cfg(args):
+    """
+    Merge the command line arguments into the configuration.
+    """
+    cfg.set_new_allowed(True)  # allow new keys to be set
+    # cfg.merge_from_other_cfg(CN(vars(args)))
+    # TODO: use CN to merge args
+    cfg.EXPERIMENT.DATA_DIR = args.data_dir
+    benchmark_name = _get_benchmark_name(args.data_dir)
+    cfg.EXPERIMENT.TASK_NAME = _parse_benchmark_name(benchmark_name)
+    cfg.EXPERIMENT.RESULT_DIR = args.result_dir
+    cfg.MODEL.VLM.ID = args.model_id
+    cfg.EXPERIMENT.DATASET = args.dataset
+    cfg.EXPERIMENT.MIN_ANGLE = float(args.min_angle)
+    return cfg
 
 
-def generate_prompt() -> Tuple[str, dict]:
-    option_map = _shuffle_dict(short_answer_dict)  # short dict
-    task_prompt_fill = task_prompt.format(
-        opt1=detailed_answer_dict[option_map[0]], 
-        opt2=detailed_answer_dict[option_map[1]],
-        opt3=detailed_answer_dict[option_map[2]],
-        opt4=detailed_answer_dict[option_map[3]],
-    )
-    return task_prompt_fill, option_map
+def _get_benchmark_name(data_dir: str) -> str:
+    """
+    Extract the benchmark name from the data directory.
+    """
+    data_dir = Path(data_dir)
+    if data_dir.is_dir():
+        return data_dir.parent.name
+    else:
+        raise ValueError(f"Invalid data directory: {data_dir}")
 
 
-def parse_answer(text: str, option_map: dict) -> dict:
-    rsn_match = re.search(r"<rsn>\s*(.*?)(?:\s*</rsn>|\s*<ans>|$)", text, re.DOTALL)
-    rsn = rsn_match.group(1) if rsn_match else "None"
-
-    ans_match = re.search(r"<ans>.*?(\d+).*?(?:</ans>|$)", text, re.IGNORECASE)
-    ans = int(ans_match.group(1)) if ans_match else None
-    if ans is None or ans not in [0, 1, 2, 3]: # avoid NoneType error
-        logging.warning("Answer Option Not Extracted")
-        ans = next(key for key, value in option_map.items() if value == "unable to judge")
-    return {
-        "rsn": rsn,
-        "ans": ans,
-        "ans_text": option_map[ans],
-    }
+def _get_benchmark_split(data_dir: str) -> str:
+    """
+    Extract the benchmark split from the data directory.
+    """
+    data_dir = Path(data_dir)
+    if data_dir.is_dir():
+        return data_dir.name
+    else:
+        raise ValueError(f"Invalid data directory: {data_dir}")
 
 
-def save_results(cfg: dict, results: list, result_dir: str) -> None: 
-    result_dir = Path(result_dir)
+def _parse_benchmark_name(benchmark_name: str) -> str:
+    """
+    Parse the benchmark name to get the task name and split.
+    """
+    parts = benchmark_name.split('-')
+    if len(parts) < 2:
+        raise ValueError(f"Invalid benchmark name format: {benchmark_name}")
+    
+    task_name = '-'.join(parts[:2]) + '-cls'
+    
+    return task_name
+
+
+def main(args):
+    # Set up logger
+    setup_logging()
+    logger = logging.getLogger(__name__)
+
+    # Create result dir for later result saver and data analysis
+    result_dir = Path(args.result_dir)
     result_dir.mkdir(parents=True, exist_ok=True)
-    logging.info("Saving results to %s", result_dir)
+    logger.info("Results will be saved to %s", result_dir)
 
-    with open(result_dir / "cfg.json", "w") as f:
-        json.dump(cfg, f, indent=4)
+    cfg = _merge_cfg(args)
 
-    with jsonlines.open(result_dir / f"view_shift_results.jsonl", mode='w') as writer:
-        for result in results:
-            writer.write(result)
+    ###------------global-config------------###
+    # Print the configuration
+    logger.info("Configuration: %s", cfg)
+    ###------------global-config------------###
 
-    df = pd.DataFrame(results)
-    df.to_csv(result_dir / f"view_shift_results.csv", index=False) 
-    logging.info("Results saved to %s", result_dir / f"view_shift_results.csv") 
+    model = load_model(args.model_id)
+    model._load_weight()
 
-    # compute metrics and save results
-    y_true = df["label"].values
-    y_pred = df["pred"].values
+    # TODO: data_dir -> task dataset
+    dataset = load_dataset(_get_benchmark_name(args.data_dir), data_root_dir=args.data_dir, cfg=cfg)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
+    dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
+
+    prompt_generator = PromptGenerator(cfg)
+
+    pipe = SpatialReasoningPipeline(cfg, prompt_generator=prompt_generator)
+
+    i = 0
+    for batch in dataloader_tqdm:
+        item = next(iter(batch)) 
+        # i += 1
+        # if i > 3:
+        #     break
+        try:
+            src_img, tgt_img = item["source_image"], item["target_image"]
+            metadata = item["metadata"]
+            images = (src_img, tgt_img)
+
+            model._clear_history()  # clear the history of VLM for each pair of images
+            
+            pipe.run_vlm_only(
+                images=images,
+                metadata=metadata,
+                vlm=model,
+            )
+        except Exception as e:
+            logger.error(f"Debug: Error processing batch: {e}")
+            break # it should not have any error.
+
+    try:
+        model.print_total_tokens_usage()
+    except:
+        logger.warning("Model does not support token usage tracking.")
+
+    ### Data Analysis Part
+    import pandas as pd
+    import seaborn as sns
+
+    df = pd.read_json(result_dir / "inference.jsonl", lines=True)
+    y_true = df["label"]
+    y_pred = df["pred"]
     accuracy = accuracy_score(y_true, y_pred)
     precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
     recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
@@ -120,87 +200,32 @@ def save_results(cfg: dict, results: list, result_dir: str) -> None:
         "recall": recall,
         "f1_score": f1,
     }
-    # save metrics to json
-    with open(result_dir / "metrics.json", "w") as f:
+
+    metrics_path = result_dir / "metrics" / "metrics.json"
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)  # ensure the directory exists
+    with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=4)
-    # save confusion matrix
+  
+    # Compute confusion matrix and save as CSV
     cm = confusion_matrix(y_true, y_pred)
-    labels = list(np.unique(y_pred))
+    labels = sorted(df["pred"].unique())
     cm_df = pd.DataFrame(cm, index=labels, columns=labels)
-    cm_df.to_csv(result_dir / "confusion_matrix.csv", index=True)
-    logging.info("Metrics saved to %s", result_dir / "metrics.json")
+    cm_csv_path = result_dir / "metrics" / "confusion_matrix.csv"
+    cm_df.to_csv(cm_csv_path)
 
+    # Plot and save heatmap
+    import matplotlib.pyplot as plt
 
-def main(args):
-    setup_logging()
-    logger = logging.getLogger(__name__)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_df, annot=True, fmt='d', cmap='Blues')
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.title('Confusion Matrix Heatmap')
+    heatmap_path = result_dir / "metrics" / "confusion_matrix_heatmap.png"
+    plt.tight_layout()
+    plt.savefig(heatmap_path)
+    plt.close()
 
-    logger.info("Using model ID: %s", args.model_id)
-    logger.info("Using data directory: %s", args.data_dir)
-    logger.info("Using result directory: %s", args.result_dir)
-
-    cfg = {
-        "model_id": args.model_id,
-        "data_dir": args.data_dir,
-        "result_dir": args.result_dir,
-    }
-
-    model = load_model(args.model_id)
-    model._load_weight()
-    dataset = load_dataset(Path(args.data_dir).parent.name, data_root_dir=args.data_dir)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
-    dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
-
-    structure_result = []
-    i = 0
-    for batch in dataloader_tqdm:
-        for item in batch:
-            # i += 1
-            # if i > 3:
-            #     break
-            try:
-                src_img, tgt_img = item["source_image"], item["target_image"]
-                images = (src_img, tgt_img)
-
-                model._clear_history()  # clear the history of VLM for each pair of images
-
-                prompt, option_map = generate_prompt()
-                answer = model.pipeline(images, prompt)  # __call__
-                pred = parse_answer(answer, option_map)  # parse the answer
-
-                if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
-                    metadata_prefix = {
-                        "scene": item["metadata"]["scene"],
-                        "seq": item["metadata"]["seq"],
-                    }
-                elif Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
-                    metadata_prefix = {
-                        "scene": item["metadata"]["scene"],
-                    }
-                else:
-                    metadata_prefix = {}
-                    logger.error(f"Invalid dataset: {Path(args.data_dir).parent.name}.")
-                
-                structure_result.append({
-                    **metadata_prefix,
-                    "pair": item["metadata"]["pair"],
-                    # "label": item["metadata"]["phi_text"],
-                    "label": item["metadata"]["tx_text"], # v2
-                    "pred": pred["ans_text"],
-                    # "label_val": np.abs(item["metadata"]["phi"]),
-                    "label_val": item["metadata"]["tx"], # v2
-                })
-
-            except Exception as e:
-                logger.error(f"Error processing batch: {e}")
-                continue
-
-    try:
-        model.print_total_tokens_usage()
-    except:
-        logger.warning("Model does not support token usage tracking.")
-
-    save_results(cfg, structure_result, args.result_dir)
     logger.info("Processing completed.")
     logger.info("Results saved to %s", args.result_dir)
 

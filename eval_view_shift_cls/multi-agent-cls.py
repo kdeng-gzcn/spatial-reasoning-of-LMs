@@ -29,7 +29,7 @@ from config.eval_view_shift.multi_agent.multi_agent_obj_centered_prompt import (
 )
 
 from yacs.config import CfgNode as CN
-from config.config import cfg
+from config.default import cfg
 from src.prompt_generator import PromptGenerator
 from src.pipeline import SpatialReasoningPipeline
 
@@ -167,7 +167,7 @@ def main(args):
     prompt_generator = PromptGenerator(cfg)
 
     # Load pipeline
-    pipe = SpatialReasoningPipeline(cfg, prompt_generator)
+    pipe = SpatialReasoningPipeline(cfg, prompt_generator=prompt_generator)
 
     i = 0
     for batch in dataloader_tqdm:
@@ -242,7 +242,6 @@ def main(args):
     plt.savefig(heatmap_path)
     plt.close()
 
-    # save_results(cfg, structure_result, args.result_dir, full_history)
     logger.info("Processing completed.")
     logger.info("Results saved to %s", args.result_dir)
 

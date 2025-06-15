@@ -9,15 +9,18 @@ from torch.utils.data import Dataset
 
 class SevenScenesImageDataset(Dataset):
     def __init__(self, data_root_dir: str, **kwargs) -> None:
+        """
+        data_dir is needed
+        """
         self.logger = logging.getLogger(__name__)
         self.data_root_dir = data_root_dir
-        self.split = kwargs["split"]
+        self.split = kwargs.get("split")
 
+        self._load_image_pairs()
+
+    def _load_image_pairs(self) -> None:
         self.data = []
-        self._load_image_pairs(self.data_root_dir)
-
-    def _load_image_pairs(self, data_dir: str) -> None:
-        if self.split == "all":
+        if self.split == "all": # TODO: delete soon
             for dof in os.listdir(self.data_root_dir):
                 dof_path = os.path.join(self.data_root_dir, dof)
                 if not os.path.isdir(dof_path):
@@ -41,7 +44,7 @@ class SevenScenesImageDataset(Dataset):
                             self.data.append(pair_path)
 
         elif self.split in ["tx", "ty", "tz", "theta", "phi", "psi"]:
-            subset_path = os.path.join(self.data_root_dir, f"{self.split}_significant")
+            subset_path = os.path.join(self.data_root_dir, f"{self.split}_significant") # TODO: func for parsing dataset structure
             for scene in os.listdir(subset_path):
                 scene_path = os.path.join(subset_path, scene)
                 if not os.path.isdir(scene_path):
@@ -60,7 +63,7 @@ class SevenScenesImageDataset(Dataset):
                         self.data.append(pair_path) # no need to count, max 90 pairs
 
         else:
-            print(f"{self.split} Not Recognized")
+            self.logger.error(f"{self.split} Not Recognized")
 
     def __len__(self):
         return len(self.data)
@@ -99,6 +102,7 @@ class SevenScenesImageDataset(Dataset):
 
 class SevenScenesViewShiftDataset(Dataset):
     def __init__(self, data_root_dir: str, **kwargs) -> None:
+        self.cfg = kwargs.get("cfg")
         self.logger = logging.getLogger(__name__)
         self.data_root_dir = Path(data_root_dir)
 
@@ -119,8 +123,8 @@ class SevenScenesViewShiftDataset(Dataset):
                     if not pair_dir.is_dir():
                         continue
 
-                    if self.dataset_length_count >= 250:
-                        self.logger.warning(f"Dataset length count exceeded 250 for dir {self.data_root_dir}.")
+                    if self.dataset_length_count >= self.cfg.DATASET.UTILS.MAX_LEN_DATASET: # TODO: set in config
+                        self.logger.warning(f"Dataset length count exceeded 60 for dir {self.data_root_dir}.")
                         return
 
                     self.list_of_pair_path.append(pair_dir)

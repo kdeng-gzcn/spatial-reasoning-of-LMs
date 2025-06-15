@@ -112,6 +112,7 @@ transformers==4.43.0
 accelerate==0.30.0
 ```
 #### Qwen/Qwen2.5-VL-7B-Instruct
+[hugginface website](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct)
 ```bash
 pip install git+https://github.com/huggingface/transformers accelerate
 pip install qwen-vl-utils[decord]==0.0.8

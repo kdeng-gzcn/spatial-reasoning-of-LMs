@@ -88,6 +88,7 @@ class ScanNetCameraMotionDataset(Dataset):
 
 class ScanNetViewShiftDataset(Dataset):
     def __init__(self, data_root_dir: str, **kwargs) -> None:
+        self.cfg = kwargs.get("cfg")
         self.logger = logging.getLogger(__name__)
         self.data_root_dir = Path(data_root_dir)
 
@@ -104,9 +105,9 @@ class ScanNetViewShiftDataset(Dataset):
                 if not pair_dir.is_dir():
                     continue
 
-                if self.dataset_length_count >= 250:
-                    self.logger.warning(f"Dataset length count exceeded 250 for dir {self.data_root_dir}.")
-                    return
+                if self.dataset_length_count >= self.cfg.DATASET.UTILS.MAX_LEN_DATASET: # TODO: set in config
+                        self.logger.warning(f"Dataset length count exceeded 60 for dir {self.data_root_dir}.")
+                        return
 
                 self.list_of_pair_path.append(pair_dir)
                 self.dataset_length_count += 1

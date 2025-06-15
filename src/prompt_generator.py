@@ -1,4 +1,5 @@
 import random
+
 from typing import Any
 
 camera_pose_list = [
@@ -52,8 +53,8 @@ obj_centered_map = {
 }
 
 total_options_map = {
-    "single_dof_cls": single_dof_map,
-    "obj_centered_cls": obj_centered_map,
+    "single-dof-cls": single_dof_map,
+    "obj-centered-cls": obj_centered_map,
 }
 
 def _generate_options_text(options: list):
@@ -65,53 +66,10 @@ class PromptGenerator:
     def __init__(self, config: Any):
         self.config = config # global config
 
+    ### Prompt for VLM-Only spatial reasoning ###
     def spatial_reasoning_prompt(self, **kwargs) -> str:
         metadata = kwargs.get("metadata", None)
-        prompt = """Input:
-        source image and target image
-
-        Task:
-        {task_prompt}
-
-        Answer Candidates:
-        {answer_candidates}
-
-        Response Format:
-        Clearly explain your reasoning inside `<rsn></rsn>` tags, and then, provide your final decision inside `<ans></ans>` tags. 
-
-        Response Format Example:
-        <rsn>My reason is...</rsn>
-        <ans>the option you choose here</ans>
-        """.format(
-            task_prompt=self.config['task']['task'],
-            answer_candidates=_generate_options_text(self.config['task']['options'])
-        )
-        return prompt
-
-    ### Prompt for multi-agents reasoning ###
-    def image_caption_prompt(self, **kwargs):
-        metadata = kwargs.get("metadata", None)
-        prompt = """Input:
-        You are given a source image (the first image you see) and a target image (the second image you see). They are inthe  same scene but from source viewpoint and target viewpoint, respectively.
-
-        Task:
-        You are part of a multi-agent system. Your task is to understand the content of the images and provide a caption for each image. The caption should be concise and descriptive, capturing the key elements, the relative spatial relationships, and the occlusion of objects in the images. 
-
-        Response Format:
-        - Provide a caption for the source image inside `<src_caption></src_caption>` tags.
-        - Provide a caption for the target image inside `<tgt_caption></tgt_caption>` tags.
-        - Compare them and provide your comparison inside `<comparison></comparison>` tags.
-
-        Example Response Format:
-        <src_caption>Describe the source image here.</src_caption>
-        <tgt_caption>Describe the target image here.</tgt_caption>
-        <comparison>Compare the two images here.</comparison>
-        """
-        return prompt
-
-    def spatial_reasoning_prompt_ma(self, vlm_answer: str, **kwargs) -> str:
-        metadata = kwargs.get("metadata", None)
-        optioins = total_options_map[self.config.TASK.NAME][self.config.TASK.SPLIT]["options"]
+        optioins = total_options_map[self.config.EXPERIMENT.TASK_NAME][self.config.EXPERIMENT.TASK_SPLIT]["options"]
 
         is_trap = self.config.STRATEGY.IS_TRAP
         if is_trap:
@@ -123,12 +81,126 @@ class PromptGenerator:
 
         answer_candidates, option_map = _generate_options_text(optioins)
 
+        prompt = """Input:
+        You are given a source image (the first image you see) and a target image (the second image you see). They are in the same scene but from source viewpoint and target viewpoint, respectively.
+
+        Task:
+        Suppose you are holding a camera, starting from source image viewpoint and moving to target image viewpoint. Your task is to determine the camera movement between the two images.
+
+        Answer Candidates: 
+        {answer_candidates}
+
+        Response Format:
+        Clearly explain your reasoning inside `<rsn></rsn>` tags, and then, provide your final decision inside `<ans></ans>` tags. 
+
+        Response Format Example:
+        <rsn>My reason is...</rsn>
+        <ans>the option you choose here</ans>
+        """.format(
+            answer_candidates=answer_candidates,
+        )
+        return prompt, option_map
+
+    ### Prompt for multi-agents reasoning ###
+    def image_caption_prompt(self, **kwargs):
+        metadata = kwargs.get("metadata", None)
+        # prompt = """Input:
+        # You are given a source image (the first image you see) and a target image (the second image you see). They are inthe  same scene but from source viewpoint and target viewpoint, respectively.
+
+        # Task:
+        # You are part of a multi-agent system. Your task is to understand the content of the images and provide a caption for each image. The caption should be concise and descriptive, capturing the key elements, the relative spatial relationships, and the occlusion of objects in the images. 
+
+        # Response Format:
+        # - Provide a caption for the source image inside `<src_caption></src_caption>` tags.
+        # - Provide a caption for the target image inside `<tgt_caption></tgt_caption>` tags.
+        # - Compare them and provide your comparison inside `<comparison></comparison>` tags.
+
+        # Example Response Format:
+        # <src_caption>Describe the source image here.</src_caption>
+        # <tgt_caption>Describe the target image here.</tgt_caption>
+        # <comparison>Compare the two images here.</comparison>
+        # """
+        optioins = total_options_map[self.config.TASK.NAME][self.config.TASK.SPLIT]["options"]
+
+        is_trap = self.config.STRATEGY.IS_TRAP
+        if is_trap:
+            optioins.append("no movement")
+
+        is_shuffle = self.config.STRATEGY.IS_SHUFFLE
+        if is_shuffle:
+            random.shuffle(optioins)
+
+        answer_candidates, option_map = _generate_options_text(optioins)
+        prompt = """Input:
+        You are given a source image (the first image you see) and a target image (the second image you see). They are in the same scene but from source viewpoint and target viewpoint, respectively.
+
+        Task:
+        You are part of a multi-agent system. Your task is to understand the content of the images and infer the camera movement between the two images.
+
+        Answer Candidates:
+        {answer_candidates}
+
+        Response Format:
+        - If you are confident to make decision, clearly explain your reasoning inside `<rsn></rsn>` tags, and provide your final answer inside `<ans></ans>` tags. 
+
+        Example Response Format:
+        Able to judge the camera movement based on images:
+        <rsn>My reason is...</rsn>
+        <ans>the option you choose here</ans>
+        """.format(
+            answer_candidates=answer_candidates,
+        )
+        return prompt, option_map, answer_candidates
+
+    def spatial_reasoning_prompt_ma(self, vlm_answer: str, **kwargs) -> str:
+        metadata = kwargs.get("metadata", None)
+        # optioins = total_options_map[self.config.TASK.NAME][self.config.TASK.SPLIT]["options"]
+
+        # is_trap = self.config.STRATEGY.IS_TRAP
+        # if is_trap:
+        #     optioins.append("no movement")
+
+        # is_shuffle = self.config.STRATEGY.IS_SHUFFLE
+        # if is_shuffle:
+        #     random.shuffle(optioins)
+
+        # answer_candidates, option_map = _generate_options_text(optioins)
+
+        option_map = kwargs.get('option_map', None)
+        answer_candidates = kwargs.get('answer_candidates', None)
+
+        # prompt = """Input: 
+        # You are given a VLM's description on a source image and a target image, which is about the spatial relationship between the two images. The VLM's answer is as follows:
+        # "{vlm_answer}"
+
+        # Task:
+        # You are part of a multi-agent system. Your task is to determine the camera movement based on the VLM's observations.
+
+        # Answer Candidates:
+        # {answer_candidates}
+
+        # Response Format:
+        # - If you are confident to make decision, clearly explain your reasoning inside `<rsn></rsn>` tags, and provide your final answer inside `<ans></ans>` tags. 
+        # - If you need more information to make a decision, then ask your question to VLM inside `<ques></ques>` tags.
+
+        # Example Response Format:
+        # 1. Able to judge the camera movement based on the VLM's observations:
+        # <rsn>My reason is...</rsn>
+        # <ans>the option you choose here</ans>
+
+        # 2. Need more information to make a decision:
+        # <ques>Can you provide more details about...</ques>
+        # """.format(
+        #     vlm_answer=vlm_answer,
+        #     answer_candidates=answer_candidates,
+        # )
+
         prompt = """Input: 
-        You are given a VLM's description on a source image and a target image, which is about the spatial relationship between the two images. The VLM's answer is as follows:
+        You are given a VLM's description on a source image and a target image, along with its justification on camera movement between image. The VLM's answer is as follows:
         "{vlm_answer}"
 
         Task:
-        You are part of a multi-agent system. Your task is to determine the camera movement based on the VLM's observations.
+        You are part of a multi-agent system. Your task is to determine if VLM's decision and its reasoning is reasonable.
 
         Answer Candidates:
         {answer_candidates}
