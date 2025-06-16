@@ -21,7 +21,7 @@ _C.MODEL.VLM.ID = "gpt-4o"  # default name for the VLM model
 _C.MODEL.LLM = CN()
 _C.MODEL.LLM.ID = "gpt-4o-text-only"  # default name for the LLM model
 
-_C.MODEL.UTILS = CN() # utility configs for model loading
+# _C.MODEL.UTILS = CN() # utility configs for model loading
 
 ### STRATEGY
 _C.STRATEGY = CN()
@@ -32,12 +32,13 @@ _C.STRATEGY.VLM_ONLY.PROMPT_TYPE = "zero-shot"
 
 _C.STRATEGY.IS_TRAP = False  # whether to add trap option
 _C.STRATEGY.IS_SHUFFLE = True  # whether to shuffle options
-_C.STRATEGY.UTILS = CN()
+
+# _C.STRATEGY.UTILS = CN()
 
 ### OTHER
 _C.EXPERIMENT = CN()
 _C.EXPERIMENT.TASK_NAME = ""
-_C.EXPERIMENT.TASK_SPLIT = "translation"  # ["translation", "rotation"]
+_C.EXPERIMENT.TASK_SPLIT = ""  # ["translation", "rotation"]
 _C.EXPERIMENT.DATA_DIR = ""  # root directory of the dataset
 _C.EXPERIMENT.RESULT_DIR = ""  # directory to save the results
 
