@@ -1,4 +1,4 @@
-from typing import Tuple, List, Any
+from typing import Tuple, Any
 import torch
 import jsonlines
 from pathlib import Path
@@ -80,7 +80,7 @@ class SpatialReasoningPipeline:
         with jsonlines.open(str(result_path), mode='a') as writer:
             writer.write(row)
 
-    def run_vlm_only(self, images: Tuple[torch.Tensor, torch.Tensor], vlm: Any, **kwargs):
+    def run_vlm_only_single_dof(self, images: Tuple[torch.Tensor, torch.Tensor], vlm: Any, **kwargs):
         metadata = kwargs.get('metadata')
         # result_dir = self.config.get('result_dir')
         is_save_result = self.config.get('is_save_result', True) # TODO: key name

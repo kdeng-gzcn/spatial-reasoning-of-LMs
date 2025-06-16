@@ -1,13 +1,10 @@
 import json
-import jsonlines
 from tqdm import tqdm
-import re
 from pathlib import Path
 import numpy as np
-import pandas as pd
 import logging
 import argparse
-from typing import Tuple
+from typing import Any
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
@@ -16,11 +13,8 @@ from src.dataset.utils import load_dataset
 from src.models.utils import load_model
 from src.logging.logging_config import setup_logging
 
-# from config.eval_view_shift.vlm_relative_pose_prompt_v1 import task_prompt, short_answer_dict, detailed_answer_dict
-# from config.eval_view_shift.vlm_view_shift_left_right_prompt_v2 import task_prompt, short_answer_dict, detailed_answer_dict
-
 ### load config
-from yacs.config import CfgNode as CN
+# from yacs.config import CfgNode as CN
 from config.default import cfg
 
 ### load modules
@@ -41,7 +35,7 @@ set_seed(42)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="obj-centered-cls VLM-Only")
+    parser = argparse.ArgumentParser(description="single-dof-cls VLM-Only")
     parser.add_argument(
         "--model_id",
         type=str,
@@ -72,6 +66,12 @@ def parse_args():
         required=True,
         help="Dataset name, e.g., 'seven-scenes', 'scannet', 'scannetpp'"
     )
+    parser.add_argument(
+        "--split",
+        type=str,
+        required=True,
+        help="Task name for the experiment, default is 'view-shift-cls'"
+    )
     return parser.parse_args()
 
 
@@ -85,10 +85,11 @@ def _merge_cfg(args):
     cfg.EXPERIMENT.DATA_DIR = args.data_dir
     benchmark_name = _get_benchmark_name(args.data_dir)
     cfg.EXPERIMENT.TASK_NAME = _parse_benchmark_name(benchmark_name)
-    cfg.EXPERIMENT.RESULT_DIR = args.result_dir
+    cfg.EXPERIMENT.RESULT_DIR = args.result_dir 
     cfg.MODEL.VLM.ID = args.model_id
     cfg.EXPERIMENT.DATASET = args.dataset
     cfg.EXPERIMENT.MIN_ANGLE = float(args.min_angle)
+    cfg.EXPERIMENT.TASK_SPLIT = args.split
     return cfg
 
 
@@ -169,7 +170,7 @@ def main(args):
 
             model._clear_history()  # clear the history of VLM for each pair of images
             
-            pipe.run_vlm_only(
+            pipe.run_vlm_only_single_dof(
                 images=images,
                 metadata=metadata,
                 vlm=model,

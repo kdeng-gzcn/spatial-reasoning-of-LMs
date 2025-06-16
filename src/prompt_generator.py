@@ -66,18 +66,52 @@ class PromptGenerator:
     def __init__(self, config: Any):
         self.config = config # global config
 
-    ### Prompt for VLM-Only spatial reasoning ###
-    def spatial_reasoning_prompt(self, **kwargs) -> str:
-        metadata = kwargs.get("metadata", None)
-        optioins = total_options_map[self.config.EXPERIMENT.TASK_NAME][self.config.EXPERIMENT.TASK_SPLIT]["options"]
-
+    def _postprocess_for_options(self, options: list) -> list:
         is_trap = self.config.STRATEGY.IS_TRAP
         if is_trap:
-            optioins.append("no movement")
+            options.append("no movement")
 
         is_shuffle = self.config.STRATEGY.IS_SHUFFLE
         if is_shuffle:
-            random.shuffle(optioins)
+            random.shuffle(options)
+        return options
+
+    ### task1: single-dof ###
+    def spatial_reasoning_prompt_single_dof(self, **kwargs) -> str:
+        metadata = kwargs.get("metadata", None)
+        # TODO: change to task 1
+        options = total_options_map[self.config.EXPERIMENT.TASK_NAME][self.config.EXPERIMENT.TASK_SPLIT]["options"]
+        options = self._postprocess_for_options(options)
+
+        answer_candidates, option_map = _generate_options_text(options)
+
+        # TODO: change to task 1
+        prompt = """Input:
+        You are given a source image (the first image you see) and a target image (the second image you see). They are in the same scene but from source viewpoint and target viewpoint, respectively.
+
+        Task:
+        Suppose you are holding a camera, starting from source image viewpoint and moving to target image viewpoint. Your task is to determine the camera movement between the two images.
+
+        Answer Candidates: 
+        {answer_candidates}
+
+        Response Format:
+        Clearly explain your reasoning inside `<rsn></rsn>` tags, and then, provide your final decision inside `<ans></ans>` tags. 
+
+        Response Format Example:
+        <rsn>My reason is...</rsn>
+        <ans>the option you choose here</ans>
+        """.format(
+            answer_candidates=answer_candidates,
+        )
+        return prompt, option_map
+
+    ### Prompt for VLM-Only spatial reasoning ###
+    def spatial_reasoning_prompt_obj_centered(self, **kwargs) -> str:
+        metadata = kwargs.get("metadata", None)
+        
+        optioins = total_options_map[self.config.EXPERIMENT.TASK_NAME][self.config.EXPERIMENT.TASK_SPLIT]["options"]
+        options = self._postprocess_for_options(options)
 
         answer_candidates, option_map = _generate_options_text(optioins)
 
