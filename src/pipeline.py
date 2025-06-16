@@ -6,7 +6,20 @@ import re
 
 import logging
 
-# from src.prompt_generator import PromptGenerator
+label_map = {
+    "single-dof-cls": {
+        "phi": "phi_text",
+        "theta": "theta_text",
+        "psi": "psi_text",
+        "tx": "tx_text",
+        "ty": "ty_text",
+        "tz": "tz_text",
+    },
+    "obj-centered-cls": {
+        "translation": "tx_text",
+        "rotation": "phi_text",
+    },
+}
 
 class SpatialReasoningPipeline:
     """
@@ -67,24 +80,26 @@ class SpatialReasoningPipeline:
         result_path = Path(self.config.EXPERIMENT.RESULT_DIR) / "inference.jsonl"
         metadata = kwargs.get('metadata', None)
         pred = kwargs.get('pred', None)
+
+        label = label_map[self.config.EXPERIMENT.TASK_NAME][self.config.EXPERIMENT.TASK_SPLIT]
         
         row = {
             **metadata,
             "rsn": pred.get("rsn", None),
             "pred": pred.get("ans_text", None),
-            "label": metadata.get("tx_text", None),  # TODO: maybe phi_text
-            "is_correct": pred.get("ans_text", None) == metadata.get("tx_text", None),
+            "label": metadata.get(label, None),
+            "is_correct": pred.get("ans_text", None) == metadata.get(label, None),
             "is_parse": pred.get("is_parse"),
             "round": 0,  # vlm-only has only one round
         }
         with jsonlines.open(str(result_path), mode='a') as writer:
             writer.write(row)
 
-    def run_vlm_only_single_dof(self, images: Tuple[torch.Tensor, torch.Tensor], vlm: Any, **kwargs):
+    def run_vlm_only(self, images: Tuple[torch.Tensor, torch.Tensor], vlm: Any, **kwargs):
         metadata = kwargs.get('metadata')
-        # result_dir = self.config.get('result_dir')
         is_save_result = self.config.get('is_save_result', True) # TODO: key name
 
+        # Generate prompt
         prompt, option_map = self.prompt_generator.spatial_reasoning_prompt(**kwargs)
         vlm_answer = vlm.pipeline(images, prompt)
 

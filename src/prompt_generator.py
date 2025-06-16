@@ -25,8 +25,29 @@ camera_pose_explanation = {
     "no movement": "No movement – The camera did not change its position or orientation.",
 }
 
+dataset_prior_demo = """
+Hint:
+the camera is moving from sadfdsfjdslfjlsdkfjsadlf
+"""
+
+CoT_demo = """
+jlsdflkasdjfkladjf
+"""
+
+VoT_demo = """
+sdfasdfsdaf
+"""
+
+# TODO: change to task 1
 single_dof_map = {
-    "phi": ["leftward", "rightward"],
+    "phi": {
+        "options": ["leftward", "rightward"],
+        "prompt": {
+            "dataset-prior": "jsdklfjklasdjflkadsjflksad",
+            "CoT": "dsfasdfas",
+            "VoT": "dfadsfadsfsa,"
+        }
+    },
     "theta": ["upward", "downward"],
     "psi": ["clockwise", "counterclockwise"],
     "tx": ["left", "right"],
@@ -38,16 +59,16 @@ obj_centered_map = {
     "translation": {
         "options": ["left", "right"],
         "task_prompt": {
-            "first_round": "You are part of a multi-agent system. Your task is to determine the camera movement based on the spatial relationship between the source image and the target image.",
-            "later_round": "sdfdsfdsf",
+            # "first_round": "You are part of a multi-agent system. Your task is to determine the camera movement based on the spatial relationship between the source image and the target image.",
+            # "later_round": "sdfdsfdsf",
         },
     },
     
     "rotation": {
         "options": ["leftward", "rightward"],
         "task_prompt": {
-            "first_round": "sdfdsfdsf",
-            "later_round": "sdfdsfdsf",
+            # "first_round": "sdfdsfdsf",
+            # "later_round": "sdfdsfdsf",
         },
     },
 }
@@ -62,6 +83,11 @@ def _generate_options_text(options: list):
     option_map = {idx: option for idx, option in enumerate(options)}
     return text, option_map
 
+
+def _generate_prompt_strategy():
+    return
+
+
 class PromptGenerator:
     def __init__(self, config: Any):
         self.config = config # global config
@@ -75,24 +101,47 @@ class PromptGenerator:
         if is_shuffle:
             random.shuffle(options)
         return options
+    
+    # def spatial_reasoning_prompt(self, **kwargs) -> str:
+    #     metadata = kwargs.get("metadata", None)
+        
+    #     options = total_options_map[self.config.EXPERIMENT.TASK_NAME][self.config.EXPERIMENT.TASK_SPLIT]["options"]
+    #     options = self._postprocess_for_options(options)
 
-    ### task1: single-dof ###
-    def spatial_reasoning_prompt_single_dof(self, **kwargs) -> str:
+    #     answer_candidates, option_map = _generate_options_text(options)
+
+    #     # TODO: change to task 1
+    #     prompt = """Input:
+    #     You are given a source image (the first image you see) and a target image (the second image you see). They are in the same scene but from source viewpoint and target viewpoint, respectively.
+
+    #     Task:
+    #     Suppose you are holding a camera, starting from source image viewpoint and moving to target image viewpoint. Your task is to determine the camera movement between the two images.
+
+    #     Answer Candidates: 
+    #     {answer_candidates}
+
+    #     Response Format:
+    #     Clearly explain your reasoning inside `<rsn></rsn>` tags, and then, provide your final decision inside `<ans></ans>` tags. 
+
+    #     Response Format Example:
+    #     <rsn>My reason is...</rsn>
+    #     <ans>the option you choose here</ans>
+    #     """.format(
+    #         answer_candidates=answer_candidates,
+    #     )
+    #     return prompt, option_map
+
+    ### Prompt for VLM-Only spatial reasoning ###
+    def spatial_reasoning_prompt(self, **kwargs) -> str:
         metadata = kwargs.get("metadata", None)
-        # TODO: change to task 1
+        
         options = total_options_map[self.config.EXPERIMENT.TASK_NAME][self.config.EXPERIMENT.TASK_SPLIT]["options"]
         options = self._postprocess_for_options(options)
 
         answer_candidates, option_map = _generate_options_text(options)
 
-        # TODO: change to task 1
-        prompt = """Input:
-        You are given a source image (the first image you see) and a target image (the second image you see). They are in the same scene but from source viewpoint and target viewpoint, respectively.
-
-        Task:
-        Suppose you are holding a camera, starting from source image viewpoint and moving to target image viewpoint. Your task is to determine the camera movement between the two images.
-
-        Answer Candidates: 
+        promnpt_answer_part = """
+        Answer Candidates:
         {answer_candidates}
 
         Response Format:
@@ -104,35 +153,16 @@ class PromptGenerator:
         """.format(
             answer_candidates=answer_candidates,
         )
-        return prompt, option_map
 
-    ### Prompt for VLM-Only spatial reasoning ###
-    def spatial_reasoning_prompt_obj_centered(self, **kwargs) -> str:
-        metadata = kwargs.get("metadata", None)
+        prompt = """Input:
+        You are given a source image (the first image you see) and a target image (the second image you see). They are in the same scene but from source viewpoint and target viewpoint, respectively.
+
+        Task:
+        Suppose you are holding a camera, starting from source image viewpoint and moving to target image viewpoint. Your task is to determine the camera movement between the two images.
+        """
+
+        prompt += promnpt_answer_part
         
-        optioins = total_options_map[self.config.EXPERIMENT.TASK_NAME][self.config.EXPERIMENT.TASK_SPLIT]["options"]
-        options = self._postprocess_for_options(options)
-
-        answer_candidates, option_map = _generate_options_text(optioins)
-
-        prompt = """Input:
-        You are given a source image (the first image you see) and a target image (the second image you see). They are in the same scene but from source viewpoint and target viewpoint, respectively.
-
-        Task:
-        Suppose you are holding a camera, starting from source image viewpoint and moving to target image viewpoint. Your task is to determine the camera movement between the two images.
-
-        Answer Candidates: 
-        {answer_candidates}
-
-        Response Format:
-        Clearly explain your reasoning inside `<rsn></rsn>` tags, and then, provide your final decision inside `<ans></ans>` tags. 
-
-        Response Format Example:
-        <rsn>My reason is...</rsn>
-        <ans>the option you choose here</ans>
-        """.format(
-            answer_candidates=answer_candidates,
-        )
         return prompt, option_map
 
     ### Prompt for multi-agents reasoning ###

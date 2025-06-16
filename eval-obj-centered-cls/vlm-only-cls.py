@@ -176,7 +176,7 @@ def main(args):
 
             model._clear_history()  # clear the history of VLM for each pair of images
             
-            pipe.run_vlm_only_single_dof(
+            pipe.run_vlm_only\(
                 images=images,
                 metadata=metadata,
                 vlm=model,

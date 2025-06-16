@@ -12,58 +12,36 @@ class SevenScenesImageDataset(Dataset):
         """
         data_dir is needed
         """
+        self.cfg = kwargs.get("cfg")
         self.logger = logging.getLogger(__name__)
         self.data_root_dir = data_root_dir
-        self.split = kwargs.get("split")
+        self.dataset_length_count = 0
 
         self._load_image_pairs()
 
     def _load_image_pairs(self) -> None:
         self.data = []
-        if self.split == "all": # TODO: delete soon
-            for dof in os.listdir(self.data_root_dir):
-                dof_path = os.path.join(self.data_root_dir, dof)
-                if not os.path.isdir(dof_path):
-                    continue 
+        for scene in os.listdir(self.data_root_dir):
+            scene_path = os.path.join(self.data_root_dir, scene)
+            if not os.path.isdir(scene_path):
+                continue  
 
-                for scene in os.listdir(dof_path):
-                    scene_path = os.path.join(dof_path, scene)
-                    if not os.path.isdir(scene_path):
-                        continue  
-
-                    for seq in os.listdir(scene_path):
-                        seq_path = os.path.join(scene_path, seq)
-                        if not os.path.isdir(seq_path):
-                            continue  
-
-                        for pair in os.listdir(seq_path):
-                            pair_path = os.path.join(seq_path, pair)
-                            if not os.path.isdir(pair_path):
-                                continue
-
-                            self.data.append(pair_path)
-
-        elif self.split in ["tx", "ty", "tz", "theta", "phi", "psi"]:
-            subset_path = os.path.join(self.data_root_dir, f"{self.split}_significant") # TODO: func for parsing dataset structure
-            for scene in os.listdir(subset_path):
-                scene_path = os.path.join(subset_path, scene)
-                if not os.path.isdir(scene_path):
+            for seq in os.listdir(scene_path):
+                seq_path = os.path.join(scene_path, seq)
+                if not os.path.isdir(seq_path):
                     continue  
 
-                for seq in os.listdir(scene_path):
-                    seq_path = os.path.join(scene_path, seq)
-                    if not os.path.isdir(seq_path):
-                        continue  
+                for pair in os.listdir(seq_path):
+                    pair_dir = os.path.join(seq_path, pair)
+                    if not os.path.isdir(pair_dir):
+                        continue
 
-                    for pair in os.listdir(seq_path):
-                        pair_path = os.path.join(seq_path, pair)
-                        if not os.path.isdir(pair_path):
-                            continue
-
-                        self.data.append(pair_path) # no need to count, max 90 pairs
-
-        else:
-            self.logger.error(f"{self.split} Not Recognized")
+                    if self.dataset_length_count >= self.cfg.DATASET.UTILS.MAX_LEN_DATASET:
+                        self.logger.warning(f"Dataset length count exceeded 60 for dir {self.data_root_dir}.")
+                        return
+                    
+                    self.data.append(pair_dir)
+                    self.dataset_length_count += 1
 
     def __len__(self):
         return len(self.data)
@@ -76,9 +54,6 @@ class SevenScenesImageDataset(Dataset):
 
         source_image_files = glob.glob(os.path.join(source_path, "*.color.png"))
         target_image_files = glob.glob(os.path.join(target_path, "*.color.png"))
-
-        if not source_image_files or not target_image_files:
-            raise FileNotFoundError(f"Missing images in {pair_path}")
 
         source_image_path = source_image_files[0]
         target_image_path = target_image_files[0]
@@ -123,7 +98,7 @@ class SevenScenesViewShiftDataset(Dataset):
                     if not pair_dir.is_dir():
                         continue
 
-                    if self.dataset_length_count >= self.cfg.DATASET.UTILS.MAX_LEN_DATASET: # TODO: set in config
+                    if self.dataset_length_count >= self.cfg.DATASET.UTILS.MAX_LEN_DATASET:
                         self.logger.warning(f"Dataset length count exceeded 60 for dir {self.data_root_dir}.")
                         return
 

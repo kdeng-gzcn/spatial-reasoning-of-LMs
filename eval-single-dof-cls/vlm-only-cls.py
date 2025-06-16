@@ -1,12 +1,15 @@
 import json
 from tqdm import tqdm
 from pathlib import Path
-import numpy as np
 import logging
 import argparse
 from typing import Any
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 ### load modules
 from src.dataset.utils import load_dataset
@@ -14,7 +17,6 @@ from src.models.utils import load_model
 from src.logging.logging_config import setup_logging
 
 ### load config
-# from yacs.config import CfgNode as CN
 from config.default import cfg
 
 ### load modules
@@ -37,7 +39,7 @@ set_seed(42)
 def parse_args():
     parser = argparse.ArgumentParser(description="single-dof-cls VLM-Only")
     parser.add_argument(
-        "--model_id",
+        "--vlm_id",
         type=str,
         required=True,
         help="Model ID for VLM on the experiment"
@@ -55,10 +57,10 @@ def parse_args():
         help="Directory to save the results"
     )
     parser.add_argument(
-        "--min_angle",
+        "--prompt_type",
         type=str,
         required=True,
-        help="Minimum angle for the task, e.g., '0.0' for translation, '0.1' for phi"
+        help="[zero-shot, dataset-prior, dataset-prior-CoT, dataset-prior-VoT]"
     )
     parser.add_argument(
         "--dataset",
@@ -75,24 +77,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def _merge_cfg(args):
-    """
-    Merge the command line arguments into the configuration.
-    """
-    cfg.set_new_allowed(True)  # allow new keys to be set
-    # cfg.merge_from_other_cfg(CN(vars(args)))
-    # TODO: use CN to merge args
-    cfg.EXPERIMENT.DATA_DIR = args.data_dir
-    benchmark_name = _get_benchmark_name(args.data_dir)
-    cfg.EXPERIMENT.TASK_NAME = _parse_benchmark_name(benchmark_name)
-    cfg.EXPERIMENT.RESULT_DIR = args.result_dir 
-    cfg.MODEL.VLM.ID = args.model_id
-    cfg.EXPERIMENT.DATASET = args.dataset
-    cfg.EXPERIMENT.MIN_ANGLE = float(args.min_angle)
-    cfg.EXPERIMENT.TASK_SPLIT = args.split
-    return cfg
-
-
 def _get_benchmark_name(data_dir: str) -> str:
     """
     Extract the benchmark name from the data directory.
@@ -100,17 +84,6 @@ def _get_benchmark_name(data_dir: str) -> str:
     data_dir = Path(data_dir)
     if data_dir.is_dir():
         return data_dir.parent.name
-    else:
-        raise ValueError(f"Invalid data directory: {data_dir}")
-
-
-def _get_benchmark_split(data_dir: str) -> str:
-    """
-    Extract the benchmark split from the data directory.
-    """
-    data_dir = Path(data_dir)
-    if data_dir.is_dir():
-        return data_dir.name
     else:
         raise ValueError(f"Invalid data directory: {data_dir}")
 
@@ -128,95 +101,100 @@ def _parse_benchmark_name(benchmark_name: str) -> str:
     return task_name
 
 
-def main(args):
-    # Set up logger
-    setup_logging()
-    logger = logging.getLogger(__name__)
+def _merge_cfg(args):
+    """
+    Merge the command line arguments into the configuration.
+    """
+    cfg.set_new_allowed(True)  # allow new keys to be set
+    # cfg.merge_from_other_cfg(CN(vars(args)))
+    # TODO: use CN to merge args
+    cfg.EXPERIMENT.DATA_DIR = args.data_dir
+    benchmark_name = _get_benchmark_name(args.data_dir)
+    cfg.EXPERIMENT.TASK_NAME = _parse_benchmark_name(benchmark_name)
+    cfg.EXPERIMENT.RESULT_DIR = args.result_dir 
+    cfg.MODEL.VLM.ID = args.vlm_id
+    cfg.EXPERIMENT.DATASET = args.dataset
+    cfg.STRATEGY.VLM_ONLY.PROMPT_TYPE = args.prompt_type
+    cfg.EXPERIMENT.TASK_SPLIT = args.split
+    return cfg
 
-    # Create result dir for later result saver and data analysis
+
+def _create_result_dir(result_dir: str) -> Path:
     result_dir = Path(args.result_dir)
     result_dir.mkdir(parents=True, exist_ok=True)
-    logger.info("Results will be saved to %s", result_dir)
+    return result_dir
 
-    cfg = _merge_cfg(args)
 
-    ###------------global-config------------###
-    # Print the configuration
-    logger.info("Configuration: %s", cfg)
-    ###------------global-config------------###
-
-    model = load_model(args.model_id)
+def _load_model(model_id: str):
+    """
+    Load the model based on the model ID.
+    """
+    model = load_model(model_id)
     model._load_weight()
+    return model
 
-    # TODO: data_dir -> task dataset
-    dataset = load_dataset(_get_benchmark_name(args.data_dir), data_root_dir=args.data_dir, cfg=cfg)
+
+def _load_dataloader(data_dir: str, cfg: Any):
+    """
+    Load the dataset and create a DataLoader.
+    """
+    dataset = load_dataset(_get_benchmark_name(data_dir), data_root_dir=data_dir, cfg=cfg)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
     dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
+    return dataloader_tqdm
 
-    prompt_generator = PromptGenerator(cfg)
 
-    pipe = SpatialReasoningPipeline(cfg, prompt_generator=prompt_generator)
-
-    i = 0
-    for batch in dataloader_tqdm:
-        item = next(iter(batch)) 
-        # i += 1
-        # if i > 3:
-        #     break
-        try:
-            src_img, tgt_img = item["source_image"], item["target_image"]
-            metadata = item["metadata"]
-            images = (src_img, tgt_img)
-
-            model._clear_history()  # clear the history of VLM for each pair of images
-            
-            pipe.run_vlm_only_single_dof(
-                images=images,
-                metadata=metadata,
-                vlm=model,
-            )
-        except Exception as e:
-            logger.error(f"Debug: Error processing batch: {e}")
-            break # it should not have any error.
-
+def _print_cost(model):
+    """
+    Print the cost of the model.
+    """
     try:
         model.print_total_tokens_usage()
-    except:
-        logger.warning("Model does not support token usage tracking.")
+    except Exception as e:
+        logging.warning("Model does not support token usage tracking: %s", e)
 
-    ### Data Analysis Part
-    import pandas as pd
-    import seaborn as sns
 
-    df = pd.read_json(result_dir / "inference.jsonl", lines=True)
-    y_true = df["label"]
-    y_pred = df["pred"]
-    accuracy = accuracy_score(y_true, y_pred)
-    precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
-    recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
-    f1 = f1_score(y_true, y_pred, average='weighted', zero_division=0)
+def _load_inference_result(result_dir: Path) -> pd.DataFrame:
+    """
+    Load the inference results from the result directory.
+    """
+    inference_file = result_dir / "inference.jsonl"
+    if not inference_file.exists():
+        raise FileNotFoundError(f"Inference file not found: {inference_file}")
+    
+    df = pd.read_json(inference_file, lines=True)
+    return df
+
+
+def _save_general_metrics(df: pd.DataFrame, result_dir: Path):
+    """
+    Save general metrics to the result directory.
+    """
     metrics = {
-        "accuracy": accuracy,
-        "precision": precision,
-        "recall": recall,
-        "f1_score": f1,
+        "accuracy": accuracy_score(df["label"], df["pred"]),
+        "precision": precision_score(df["label"], df["pred"], average='weighted', zero_division=0),
+        "recall": recall_score(df["label"], df["pred"], average='weighted', zero_division=0),
+        "f1_score": f1_score(df["label"], df["pred"], average='weighted', zero_division=0),
     }
-
+    
     metrics_path = result_dir / "metrics" / "metrics.json"
     metrics_path.parent.mkdir(parents=True, exist_ok=True)  # ensure the directory exists
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=4)
-  
-    # Compute confusion matrix and save as CSV
-    cm = confusion_matrix(y_true, y_pred)
+
+
+def _save_confusion_matrix(df: pd.DataFrame, result_dir: Path):
+    """
+    Save confusion matrix to the result directory.
+    """
+    cm = confusion_matrix(df["label"], df["pred"])
     labels = sorted(df["pred"].unique())
     cm_df = pd.DataFrame(cm, index=labels, columns=labels)
+    
     cm_csv_path = result_dir / "metrics" / "confusion_matrix.csv"
     cm_df.to_csv(cm_csv_path)
 
     # Plot and save heatmap
-    import matplotlib.pyplot as plt
-
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm_df, annot=True, fmt='d', cmap='Blues')
     plt.ylabel('True label')
@@ -227,8 +205,65 @@ def main(args):
     plt.savefig(heatmap_path)
     plt.close()
 
+
+def inference(dataloader_tqdm, vlm, pipe, **kwargs) -> None:
+    """
+    Run inference on the dataloader using the VLM and pipeline.
+    """
+    for batch in dataloader_tqdm:
+        item = next(iter(batch))  # get the first item in the batch
+
+        src_img, tgt_img = item["source_image"], item["target_image"]
+        metadata = item["metadata"]
+        images = (src_img, tgt_img)
+
+        vlm._clear_history()  # clear the history of VLM for each pair of images
+        
+        pipe.run_vlm_only(
+            images=images,
+            metadata=metadata,
+            vlm=vlm,
+        )
+
+
+def main(args):
+    # Set up logger
+    setup_logging()
+    logger = logging.getLogger(__name__)
+
+    # Create result dir for later result saver and data analysis
+    result_dir = _create_result_dir(args.result_dir)
+    logger.info("Results will be saved to %s", result_dir)
+
+    # Merge command line arguments into the configuration
+    cfg = _merge_cfg(args)
+    logger.info("Configuration: %s", cfg)
+
+    # Load dataloader
+    dataloader_tqdm = _load_dataloader(args.data_dir, cfg)
+
+    # Load the model
+    vlm = _load_model(args.vlm_id)
+
+    # Load the prompt generator
+    prompt_generator = PromptGenerator(cfg)
+
+    # Load the pipeline
+    pipe = SpatialReasoningPipeline(cfg, prompt_generator=prompt_generator)
+
+    # Run the inference
+    logger.info("Starting inference...")
+    inference(dataloader_tqdm, vlm, pipe)
+
+    # try to print cost
+    _print_cost(vlm)
+
+    ### Data Analysis Part
+    df = _load_inference_result(result_dir)
+    _save_general_metrics(df, result_dir)
+    _save_confusion_matrix(df, result_dir)
+
     logger.info("Processing completed.")
-    logger.info("Results saved to %s", args.result_dir)
 
 if __name__ == "__main__":
     args = parse_args()
