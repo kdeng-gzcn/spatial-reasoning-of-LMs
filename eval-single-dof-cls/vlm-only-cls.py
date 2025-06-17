@@ -107,7 +107,6 @@ def _merge_cfg(args):
     """
     cfg.set_new_allowed(True)  # allow new keys to be set
     # cfg.merge_from_other_cfg(CN(vars(args)))
-    # TODO: use CN to merge args
     cfg.EXPERIMENT.DATA_DIR = args.data_dir
     benchmark_name = _get_benchmark_name(args.data_dir)
     cfg.EXPERIMENT.TASK_NAME = _parse_benchmark_name(benchmark_name)
