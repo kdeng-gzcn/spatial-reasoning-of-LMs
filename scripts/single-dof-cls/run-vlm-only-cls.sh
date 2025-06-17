@@ -4,9 +4,9 @@ conda activate spatial_reasoning_env
 set -a && source .env && set +a
 huggingface-cli login --token "${HUGGINGFACE_TOKEN}"
 
-for dataset in 7-scenes; do
+for dataset in 7-scenes scannet scannetpp; do
     for vlm_id in gpt-4o; do
-        for prompt_type in zero-shot; do
+        for prompt_type in zero-shot dataset-prior-hint CoT-hint VoT-hint; do
             for split in phi; do
                 echo "Running experiment
                  with dataset=${dataset}, vlm_id=${vlm_id}, prompt_type=${prompt_type}, and split=${split}"
