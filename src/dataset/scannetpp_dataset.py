@@ -16,7 +16,8 @@ class ScanNetppCameraMotionDataset(Dataset):
 
         self._load_image_pairs()
 
-    def _load_image_pairs(self, data_dir: str) -> None:
+    def _load_image_pairs(self) -> None:
+        self.data = []
         for scene in os.listdir(self.data_root_dir):
             hash_dir = os.path.join(self.data_root_dir, scene)
             if not os.path.isdir(hash_dir):
@@ -38,7 +39,7 @@ class ScanNetppCameraMotionDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        pair_path = self.data[idx]
+        pair_path = Path(self.data[idx])
         source_path = pair_path / "source"
         target_path = pair_path / "target"
 

@@ -1,8 +1,9 @@
 #!/bin/bash
-source ~/spatial-reasoning-language-models/miniconda3/bin/activate spatial_reasoning_env
-source .env
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate spatial_reasoning_env
+set -a && source .env && set +a
 
-python benchmark_generation/scannetpp/generate_spatial_reasoning.py \
-    --yaml_file config/benchmark_generation/scannetpp/spatial_reasoning/config.yaml \
-    --dataset_dir data/scannetpp/data \
-    --output_dir benchmark/spatial-reasoning-scannetpp \
+python benchmark-generation/scannetpp/generate_camera_motion.py \
+    --yaml_file config/benchmark_generation/scannetpp/single-dof-camera-motion-cls/config.yaml \
+    --dataset_dir ~/data/scannetpp/data \
+    --output_dir ~/benchmark/single-dof-camera-motion-scannetpp \

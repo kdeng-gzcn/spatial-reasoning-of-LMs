@@ -1,8 +1,29 @@
 # Evaluation of Spatial Reasoning
+## Action Item Sync
+### Result
+result folder structure
+> C1: task -- dataset -- model -- strategy -- split
+
+> C2: task -- split -- dataset -- model -- angle
+
+- [ ] comparison of with/without trap option
+
+- [ ] models: phi3.5, qwen2.5, gpt, sonnet, SIFT, LoFTR
+
+- [ ] ablation study
+
+### figures and tables
+
+- [ ] dataset example
+
+- [ ] table of experiments
+
+- [ ] figs for visualization 
+
 ## Rebuild
 ### Config
-- [ ] use yacs for all config
-- [ ] specify how many nodes should i make? what is the structure of the nodes?
+- [x] use yacs for all config
+- [x] specify how many nodes should i make? what is the structure of the nodes?
 ### Dataset
 - [ ] metadata, translate one into image path, otherwise, i will keep using hard-code prefix for result dataframe
 
@@ -48,20 +69,20 @@ expected metadata:
 }
 
 ### Prompt 
-- [ ] make a general template for all dataset subset
-- [ ] find a banalance between dataset subset prior, the reasoning skils and config
-- [ ] make a nicer candidate generater (shuffle, trap, labelencoder)
+- [x] make a general template for all dataset subset
+- [x] find a banalance between dataset subset prior, the reasoning skils and config
+- [x] make a nicer candidate generater (shuffle, trap, labelencoder)
 ### Pipeline
 - [x] multi agents
 ### Parser
-- [ ] parser function for extracting answer
-- [ ] consider how prompt design?
+- [x] parser function for extracting answer
+- [x] consider how prompt design?
 ### Result Saver
-- [ ] save result with jsonlines in a stream way for each sample
-- [ ] make a nice inference_result dataframe, chat_history dataframe for multi-agents, consider how prompt design?
+- [x] save result with jsonlines in a stream way for each sample
+- [x] make a nice inference_result dataframe, chat_history dataframe for multi-agents, consider how prompt design?
 - [ ] filter out the errors.jsonlines
 ### Data Analysis
-- [ ] for final result (list of dict), do data analysis and record basic metrics
+- [x] for final result (list of dict), do data analysis and record basic metrics
 ## Task: Single-DoF Camera Motion Classification
 This benchmark includes tasks like judging how camera moves. The camera does not move randomly, for each task, the camera only moves in one DoF, which leads the view a slight difference from source view to target view.
 > - [ ] make new dataset with larger threshold (now, the view changes are slight)
@@ -80,7 +101,7 @@ An intuitive way to evaluate is to provide a task description prompt to VLM, and
 
 4. VoT
 
-> - [ ] try to figure out hou many choices as candidates is the best
+> - [x] try to figure out hou many choices as candidates is the best
 ### Multi-Agent (LLM + VLM)
 Based on our ablation study, we find that if the caption of images is given (including the depth information is the best), there are might be improvements. Also, we hope LLM here to come up with a better reasonning.
 

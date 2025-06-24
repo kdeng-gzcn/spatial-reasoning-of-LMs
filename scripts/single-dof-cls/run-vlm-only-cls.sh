@@ -4,9 +4,9 @@ conda activate spatial_reasoning_env
 set -a && source .env && set +a
 huggingface-cli login --token "${HUGGINGFACE_TOKEN}"
 
-for dataset in 7-scenes; do
+for dataset in scannetpp; do
     for vlm_id in gpt-4o; do
-        for prompt_type in dataset-prior-hint CoT-hint VoT-hint; do
+        for prompt_type in zero-shot dataset-prior-hint CoT-hint VoT-hint; do
             for split in theta phi psi tx ty tz; do
                 DATA_DIR=~/benchmark/single-dof-camera-motion-${dataset}/${split}_significant
                 RESULT_DIR=result/final-table/single-dof-cls/${dataset}/${vlm_id}/${prompt_type}/${split}
