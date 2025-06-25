@@ -420,7 +420,7 @@ class PromptGenerator:
 
         Response Format Example:
         <rsn>My reason is...</rsn>
-        <ans>the option you choose here</ans>
+        <ans>the number of option you choose here</ans>
         """.format(
             answer_candidates=answer_candidates,
         )
@@ -474,7 +474,7 @@ class PromptGenerator:
         Example Response Format:
         Able to judge the camera movement based on images:
         <rsn>My reason is...</rsn>
-        <ans>the option you choose here</ans>
+        <ans>the number of option you choose here</ans>
         """.format(
             answer_candidates=answer_candidates,
         )
@@ -540,7 +540,7 @@ class PromptGenerator:
         Example Response Format:
         1. Able to judge the camera movement based on the VLM's observations:
         <rsn>My reason is...</rsn>
-        <ans>the option you choose here</ans>
+        <ans>the number of option you choose here</ans>
 
         2. Need more information to make a decision:
         <ques>Can you provide more details about...</ques>

@@ -21,6 +21,8 @@ _C.MODEL.VLM.ID = "gpt-4o"  # default name for the VLM model
 _C.MODEL.LLM = CN()
 _C.MODEL.LLM.ID = None  # default name for the LLM model
 
+_C.MODEL.CV_METHOD = CN()
+
 # _C.MODEL.UTILS = CN() # utility configs for model loading
 
 ### STRATEGY

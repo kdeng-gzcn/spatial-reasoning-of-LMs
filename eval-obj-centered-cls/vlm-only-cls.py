@@ -70,7 +70,7 @@ def parse_args():
         "--dataset",
         type=str,
         required=True,
-        help="Dataset name, e.g., 'seven-scenes', 'scannet', 'scannetpp'"
+        help="Dataset name, e.g., '7-scenes', 'scannet', 'scannetpp'"
     )
     parser.add_argument(
         "--split",
@@ -106,17 +106,6 @@ def _get_benchmark_name(data_dir: str) -> str:
     data_dir = Path(data_dir)
     if data_dir.is_dir():
         return data_dir.parent.name
-    else:
-        raise ValueError(f"Invalid data directory: {data_dir}")
-
-
-def _get_benchmark_split(data_dir: str) -> str:
-    """
-    Extract the benchmark split from the data directory.
-    """
-    data_dir = Path(data_dir)
-    if data_dir.is_dir():
-        return data_dir.name
     else:
         raise ValueError(f"Invalid data directory: {data_dir}")
 
@@ -176,7 +165,7 @@ def main(args):
 
             model._clear_history()  # clear the history of VLM for each pair of images
             
-            pipe.run_vlm_only\(
+            pipe.run_vlm_only(
                 images=images,
                 metadata=metadata,
                 vlm=model,

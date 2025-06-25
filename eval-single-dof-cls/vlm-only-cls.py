@@ -15,13 +15,11 @@ import matplotlib.pyplot as plt
 from src.dataset.utils import load_dataset
 from src.models.utils import load_model
 from src.logging.logging_config import setup_logging
+from src.prompt_generator import PromptGenerator
+from src.pipeline import SpatialReasoningPipeline
 
 ### load config
 from config.default import cfg
-
-### load modules
-from src.prompt_generator import PromptGenerator
-from src.pipeline import SpatialReasoningPipeline
 
 # set seed
 import random
