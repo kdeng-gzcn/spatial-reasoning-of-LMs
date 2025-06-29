@@ -1,16 +1,16 @@
 import cv2
 import json
 import jsonlines
-import yaml
 from pathlib import Path
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 import logging
 import argparse
 from tqdm import tqdm
 from typing import Tuple
 import torch
-
 import kornia as K
 import kornia.feature as KF
 from torch.utils.data import DataLoader
@@ -18,6 +18,25 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 from src.dataset.utils import load_dataset
 from src.logging.logging_config import setup_logging
+
+from config.default import cfg
+
+
+label_map = {
+    "single-dof-cls": {
+        "phi": "phi_text",
+        "theta": "theta_text",
+        "psi": "psi_text",
+        "tx": "tx_text",
+        "ty": "ty_text",
+        "tz": "tz_text",
+    },
+    "obj-centered-cls": {
+        "translation": "tx_text",
+        "rotation": "phi_text",
+    },
+}
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="LoFTR Relative Pose Estimation")
@@ -39,7 +58,67 @@ def parse_args():
         required=True,
         help="Directory to save the results"
     )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        required=True,
+        help="Dataset name, e.g., 'seven-scenes', 'scannet', 'scannetpp'"
+    )
+    parser.add_argument(
+        "--min_angle",
+        type=str,
+        required=True,
+        help="Minimum angle for the task, e.g., '0.0' for translation, '0.1' for phi"
+    )
+    parser.add_argument(
+        "--split",
+        type=str,
+        required=True,
+        help="Task name for the experiment, ['rotation', 'translation']"
+    )
     return parser.parse_args()
+
+
+def _merge_cfg(args):
+    """
+    Merge the command line arguments into the configuration.
+    """
+    cfg.set_new_allowed(True)  # allow new keys to be set
+    # cfg.merge_from_other_cfg(CN(vars(args)))
+    cfg.merge_from_file(args.yaml_file)
+    cfg.EXPERIMENT.DATA_DIR = args.data_dir
+    benchmark_name = _get_benchmark_name(args.data_dir)
+    cfg.EXPERIMENT.TASK_NAME = _parse_benchmark_name(benchmark_name)
+    cfg.EXPERIMENT.RESULT_DIR = args.result_dir 
+    cfg.EXPERIMENT.DATASET = args.dataset
+    cfg.EXPERIMENT.MIN_ANGLE = float(args.min_angle)
+    cfg.EXPERIMENT.TASK_SPLIT = args.split
+    cfg.MODEL.CV_METHOD.ID = "LoFTR"
+    return cfg
+
+
+def _get_benchmark_name(data_dir: str) -> str:
+    """
+    Extract the benchmark name from the data directory.
+    """
+    data_dir = Path(data_dir)
+    if data_dir.is_dir():
+        return data_dir.parent.name
+    else:
+        raise ValueError(f"Invalid data directory: {data_dir}")
+
+    
+def _parse_benchmark_name(benchmark_name: str) -> str:
+    """
+    Parse the benchmark name to get the task name and split.
+    """
+    parts = benchmark_name.split('-')
+    if len(parts) < 2:
+        raise ValueError(f"Invalid benchmark name format: {benchmark_name}")
+    
+    task_name = '-'.join(parts[:2]) + '-cls'
+    
+    return task_name
 
 
 def pose2prediction(Rmat: np.ndarray, t: np.ndarray) -> dict:
@@ -61,153 +140,166 @@ def pose2prediction(Rmat: np.ndarray, t: np.ndarray) -> dict:
     return pred
 
 
-def save_results(results: list, result_dir: str) -> None:
+def get_intrinsic_matrix(data_dir: str, **kwargs) -> np.ndarray:
+    """
+    Get the intrinsic matrix based on the benchmark name.
+    """
+    benchmark_name = _get_benchmark_name(data_dir)
+    if benchmark_name == "obj-centered-view-shift-7-scenes":
+        return np.loadtxt("/home/u5u/kdeng.u5u/spatial-reasoning-of-LMs/config/eval/intrinsic-7-scenes.txt", delimiter=",")
+    
+    elif benchmark_name == "obj-centered-view-shift-scannet":
+        item = kwargs.get("item") # item["metadata"]["scene"]
+        return np.loadtxt(Path("/home/u5u/kdeng.u5u/data/scannet-v2/scans_test") / item["metadata"]["scene"] / "intrinsic" / "intrinsic_color.txt")[:3, :3]
+    
+    else:
+        raise ValueError(f"Unknown benchmark name: {benchmark_name}")
+
+
+def save_metrics(results: list, result_dir: str) -> None:
     result_dir = Path(result_dir)
-    result_dir.mkdir(parents=True, exist_ok=True)
-    logging.info("Saving results to %s", result_dir)
 
-    with jsonlines.open(result_dir / "view_shift_results.jsonl", mode='w') as writer:
-        for result in results:
-            writer.write(result)
-
+    ### Data Analysis
     df = pd.DataFrame(results)
-    df.to_csv(result_dir / "view_shift_results.csv", index=False) 
-    logging.info("Results saved to %s", result_dir / "view_shift_results.csv") 
 
-    # compute metrics and save results
-    y_true = df["label"].values
-    y_pred = df["pred"].values
-    accuracy = accuracy_score(y_true, y_pred)
-    precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
-    recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
-    f1 = f1_score(y_true, y_pred, average='weighted', zero_division=0)
     metrics = {
-        "accuracy": accuracy,
-        "precision": precision,
-        "recall": recall,
-        "f1_score": f1,
+        "accuracy": accuracy_score(df["label"], df["pred"]),
+        "precision": precision_score(df["label"], df["pred"], average='weighted', zero_division=0),
+        "recall": recall_score(df["label"], df["pred"], average='weighted', zero_division=0),
+        "f1_score": f1_score(df["label"], df["pred"], average='weighted', zero_division=0),
     }
-    # save metrics to json
-    with open(result_dir / "metrics.json", "w") as f:
+    
+    metrics_path = result_dir / "metrics" / "metrics.json"
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)  # ensure the directory exists
+
+    with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=4)
-    # save confusion matrix
-    cm = confusion_matrix(y_true, y_pred)
-    labels = list(np.unique(y_pred))
+
+    # Save confusion matrix
+    cm = confusion_matrix(df["label"], df["pred"])
+    labels = sorted(df["pred"].unique())
     cm_df = pd.DataFrame(cm, index=labels, columns=labels)
-    cm_df.to_csv(result_dir / "confusion_matrix.csv", index=True)
-    logging.info("Metrics saved to %s", result_dir / "metrics.json")
+    
+    cm_csv_path = result_dir / "metrics" / "confusion_matrix.csv"
+    cm_df.to_csv(cm_csv_path)
+
+    # Plot and save heatmap
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_df, annot=True, fmt='d', cmap='Blues')
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.title('Confusion Matrix Heatmap')
+    heatmap_path = result_dir / "metrics" / "confusion_matrix_heatmap.png"
+    plt.tight_layout()
+    plt.savefig(heatmap_path)
+    plt.close()
 
 
 def main(args):
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    logger.info("Loaded config from %s", args.yaml_file)
-    logger.info("Using data directory: %s", args.data_dir)
-    logger.info("Using result directory: %s", args.result_dir)
+    # Create result dir for later result saver and data analysis
+    result_dir = Path(args.result_dir)
+    result_dir.mkdir(parents=True, exist_ok=True)
+    logger.info("Results will be saved to %s", result_dir)
 
-    cfg = yaml.safe_load(Path(args.yaml_file).read_text())
-    dataset = load_dataset(Path(args.data_dir).parent.name, data_root_dir=args.data_dir)
+    cfg = _merge_cfg(args)
+
+    ###------------global-config------------###
+    # Print the configuration
+    logger.info("Configuration: %s", cfg)
+    ###------------global-config------------###
+
+    dataset = load_dataset(Path(args.data_dir).parent.name, data_root_dir=args.data_dir, cfg=cfg)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
     dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
 
-    matcher = KF.LoFTR(pretrained="indoor_new")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    matcher = KF.LoFTR(pretrained="indoor_new").to(device)
 
     structure_result = []
     for batch in dataloader_tqdm:
-        for item in batch:
-            try:
-                src_img, tgt_img = item["source_image"], item["target_image"]
+        item = next(iter(batch))
+        try:
+            src_img, tgt_img = item["source_image"], item["target_image"]
 
-                src_img = src_img.float() / 255.0 # transform uint8 into rgb32
-                tgt_img = tgt_img.float() / 255.0
+            src_img = src_img.float() / 255.0 # transform uint8 into rgb32
+            tgt_img = tgt_img.float() / 255.0
 
-                src_img = src_img.unsqueeze(0)
-                tgt_img = tgt_img.unsqueeze(0)
+            src_img = src_img.unsqueeze(0).to(device)
+            tgt_img = tgt_img.unsqueeze(0).to(device)
 
-                src_img = K.geometry.resize(src_img, (480, 640), antialias=True)
-                tgt_img = K.geometry.resize(tgt_img, (480, 640), antialias=True)
+            src_img = K.geometry.resize(src_img, (480, 640), antialias=True)
+            tgt_img = K.geometry.resize(tgt_img, (480, 640), antialias=True)
 
-                if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
-                    metadata_prefix = {
-                        "scene": item["metadata"]["scene"],
-                        "seq": item["metadata"]["seq"],
-                    }
-                    K_intrinsic = np.loadtxt("config/eval_view_shift/intrinsic-7-scene.txt", delimiter=",")
-                elif Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
-                    metadata_prefix = {
-                        "scene": item["metadata"]["scene"],
-                    }
-                    K_intrinsic = np.loadtxt(Path("data/scannet-v2/scans_test") / item["metadata"]["scene"] / "intrinsic" / "intrinsic_color.txt")
-                    K_intrinsic = K_intrinsic[:3, :3]
-                else:
-                    metadata_prefix = {}
-                    logger.error(f"Invalid dataset: {Path(args.data_dir).parent.name}.")
+            K_intrinsic = get_intrinsic_matrix(args.data_dir, item=item)
 
-                input_dict = {
-                    "image0": K.color.rgb_to_grayscale(tgt_img), # image0 is target image
-                    "image1": K.color.rgb_to_grayscale(src_img),
-                }
+            input_dict = {
+                "image0": K.color.rgb_to_grayscale(tgt_img), # image0 is target image
+                "image1": K.color.rgb_to_grayscale(src_img),
+            }
 
-                with torch.inference_mode():
+            with torch.inference_mode():
+                with torch.amp.autocast("cuda"):
                     correspondences = matcher(input_dict)
 
-                mkpts0 = correspondences["keypoints0"].cpu().numpy()
-                mkpts1 = correspondences["keypoints1"].cpu().numpy()
+            mkpts0 = correspondences["keypoints0"].cpu().numpy()
+            mkpts1 = correspondences["keypoints1"].cpu().numpy()
 
-                E, _ = cv2.findEssentialMat(
-                    mkpts0, mkpts1, 
-                    cameraMatrix=K_intrinsic, 
-                    method=cv2.RANSAC, 
-                    threshold=1.0, 
-                    prob=0.999
-                )
-                
-                _, Rmat, t, _ = cv2.recoverPose(E, mkpts0, mkpts1, K_intrinsic)
-
-                pred = pose2prediction(Rmat, t.squeeze())
-                
-                structure_result.append({
-                    **metadata_prefix,
-                    "pair": item["metadata"]["pair"],
-                    # "label": item["metadata"]["phi_text"],
-                    "label": item["metadata"]["tx_text"], # v2
-                    # "pred": pred["phi_text"],
-                    "pred": pred["tx_text"], # v2
-                    # "label_val": np.abs(item["metadata"]["phi"]),
-                    "label_val": item["metadata"]["tx"], # v2
-                    # "pred_val": np.abs(pred["phi"]),
-                    "pred_val": np.abs(pred["tx"]), # v2
-                })
-
-            except Exception as e:
-                logger.error(f"Error processing batch: {e}")
-                if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
-                    metadata_prefix = {
-                        "scene": item["metadata"]["scene"],
-                        "seq": item["metadata"]["seq"],
-                    }
-                elif Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
-                    metadata_prefix = {
-                        "scene": item["metadata"]["scene"],
-                    }
-                else:
-                    metadata_prefix = {}
-                    logger.error(f"Invalid dataset: {Path(args.data_dir).parent.name}.")
-                    
-                structure_result.append({
-                    **metadata_prefix,
-                    "pair": item["metadata"]["pair"],
-                    # "label": item["metadata"]["phi_text"],
-                    "label": item["metadata"]["tx_text"], # v2
-                    "pred": "error",
-                    # "label_val": np.abs(item["metadata"]["phi"]),
-                    "label_val": item["metadata"]["tx"], # v2
-                    "pred_val": None,
-                })
-                continue
+            E, _ = cv2.findEssentialMat(
+                mkpts0, mkpts1, 
+                cameraMatrix=K_intrinsic, 
+                method=cv2.RANSAC, 
+                threshold=1.0, 
+                prob=0.999
+            )
             
-    save_results(structure_result, args.result_dir)
+            _, Rmat, t, _ = cv2.recoverPose(E, mkpts0, mkpts1, K_intrinsic)
+
+            pred = pose2prediction(Rmat, t.squeeze())
+            
+            dof_text = label_map[cfg.EXPERIMENT.TASK_NAME][cfg.EXPERIMENT.TASK_SPLIT]
+            dof = dof_text.split("_")[0]  # e.g., "tx", "ty", "tz", "phi", "theta", "psi"
+
+            row = {
+                **item["metadata"],
+                "pred_val": np.abs(pred[dof]),
+                "label_val": item["metadata"][dof],
+                "pred": pred[dof_text],
+                "label": item["metadata"][dof_text],
+                "is_correct": pred[dof_text] == item["metadata"][dof_text],
+                "is_valid": True,
+            }
+            structure_result.append(row)
+
+            with jsonlines.open(result_dir / "inference.jsonl", mode='a') as writer:
+                writer.write(row)
+
+        except Exception as e:
+            logger.error(f"Error processing batch: {e}")
+
+            dof_text = label_map[cfg.EXPERIMENT.TASK_NAME][cfg.EXPERIMENT.TASK_SPLIT]
+            dof = dof_text.split("_")[0]  # e.g., "tx", "ty", "tz", "phi", "theta", "psi"
+
+            row = {
+                **item["metadata"],
+                "pred_val": None,
+                "label_val": item["metadata"][dof],
+                "pred": "error",
+                "label": item["metadata"][dof_text],
+                "is_correct": False,
+                "is_valid": False,
+            }
+            structure_result.append(row)
+
+            with jsonlines.open(result_dir / "inference.jsonl", mode='a') as writer:
+                writer.write(row)
+
+            continue
+            
+    save_metrics(structure_result, args.result_dir)
+
     logger.info("Processing completed.")
     logger.info("Results saved to %s", args.result_dir)
 

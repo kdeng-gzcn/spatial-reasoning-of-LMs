@@ -42,7 +42,7 @@ def parse_args():
         "--yaml_file",
         type=str,
         required=True,
-        help="Path to the YAML file"
+        help="Path to the SIFT YAML file"
     )
     parser.add_argument(
         "--data_dir", 
@@ -60,13 +60,13 @@ def parse_args():
         "--dataset",
         type=str,
         required=True,
-        help="Dataset name, e.g., 'seven-scenes', 'scannet', 'scannetpp'"
+        help="Dataset name, e.g., 'seven-scenes', 'scannet'"
     )
     parser.add_argument(
         "--split",
         type=str,
         required=True,
-        help="Task name for the experiment, ['rotation', 'translation']"
+        help="Task metric name for the experiment, ['tx', 'ty', 'tz', 'phi', 'theta', 'psi']"
     )
     return parser.parse_args()
 
@@ -77,7 +77,7 @@ def _merge_cfg(args):
     """
     cfg.set_new_allowed(True)  # allow new keys to be set
     # cfg.merge_from_other_cfg(CN(vars(args)))
-    cfg.merge_from_file(args.yaml_file) # TODO: merge with yaml file
+    cfg.merge_from_file(args.yaml_file)
     cfg.EXPERIMENT.DATA_DIR = args.data_dir
     benchmark_name = _get_benchmark_name(args.data_dir)
     cfg.EXPERIMENT.TASK_NAME = _parse_benchmark_name(benchmark_name)
@@ -120,13 +120,14 @@ def extract_keypoints_and_descriptors(sift, image: np.ndarray) -> Tuple[list, np
 def match_descriptors(cfg: dict, des1, des2) -> list:
     flann = cv2.FlannBasedMatcher(dict(algorithm=1, trees=5), dict(checks=50))
     matches = flann.knnMatch(des1, des2, k=2)
-    return [m for m, n in matches if m.distance < cfg["lowes_match_ratio"] * n.distance]
+    return [m for m, n in matches if m.distance < cfg.MODEL.CV_METHOD.SIFT.LOWES_MATCH_RATIO * n.distance]
 
 
 def estimate_pose(cfg: dict, kp1, kp2, matches, K) -> Tuple[np.ndarray, np.ndarray]:
-    if len(matches) < cfg["min_match_count"]:
+    if len(matches) < cfg.MODEL.CV_METHOD.SIFT.MIN_MATCH_COUNT:
         logging.warning("Not enough good matches.")
         return None, None
+    
     src_pts = np.float32([kp1[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
     dst_pts = np.float32([kp2[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
 
@@ -154,42 +155,59 @@ def pose2prediction(Rmat: np.ndarray, t: np.ndarray) -> dict:
     return pred
 
 
+def get_intrinsic_matrix(data_dir: str, **kwargs) -> np.ndarray:
+    """
+    Get the intrinsic matrix based on the benchmark name.
+    """
+    benchmark_name = _get_benchmark_name(data_dir)
+    if benchmark_name == "single-dof-camera-motion-7-scenes":
+        return np.loadtxt("/home/u5u/kdeng.u5u/spatial-reasoning-of-LMs/config/eval/intrinsic-7-scenes.txt", delimiter=",")
+    
+    elif benchmark_name == "single-dof-camera-motion-scannet":
+        item = kwargs.get("item") # item["metadata"]["scene"]
+        return np.loadtxt(Path("/home/u5u/kdeng.u5u/data/scannet-v2/scans_test") / item["metadata"]["scene"] / "intrinsic" / "intrinsic_color.txt")[:3, :3]
+    
+    else:
+        raise ValueError(f"Unknown benchmark name: {benchmark_name}")
+
+
 def save_metrics(results: list, result_dir: str) -> None:
     result_dir = Path(result_dir)
 
     ### Data Analysis
     df = pd.DataFrame(results)
 
-    # compute metrics and save results
-    y_true = df["label"].values
-    y_pred = df["pred"].values
-
-    accuracy = accuracy_score(y_true, y_pred)
-    precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
-    recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
-    f1 = f1_score(y_true, y_pred, average='weighted', zero_division=0)
-
     metrics = {
-        "accuracy": accuracy,
-        "precision": precision,
-        "recall": recall,
-        "f1_score": f1,
+        "accuracy": accuracy_score(df["label"], df["pred"]),
+        "precision": precision_score(df["label"], df["pred"], average='weighted', zero_division=0),
+        "recall": recall_score(df["label"], df["pred"], average='weighted', zero_division=0),
+        "f1_score": f1_score(df["label"], df["pred"], average='weighted', zero_division=0),
     }
+    
+    metrics_path = result_dir / "metrics" / "metrics.json"
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)  # ensure the directory exists
 
-    # save metrics to json
-    metrics_dir = result_dir / "metrics"
-    metrics_dir.mkdir(parents=True, exist_ok=True)
-
-    with open(metrics_dir / "metrics.json", "w") as f:
+    with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=4)
 
-    # save confusion matrix
-    cm = confusion_matrix(y_true, y_pred)
-    labels = list(np.unique(y_pred))
+    # Save confusion matrix
+    cm = confusion_matrix(df["label"], df["pred"])
+    labels = sorted(df["pred"].unique())
     cm_df = pd.DataFrame(cm, index=labels, columns=labels)
-    cm_df.to_csv(metrics_dir / "confusion_matrix.csv", index=True)
+    
+    cm_csv_path = result_dir / "metrics" / "confusion_matrix.csv"
+    cm_df.to_csv(cm_csv_path)
 
-    # plot heatmap
+    # Plot and save heatmap
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_df, annot=True, fmt='d', cmap='Blues')
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.title('Confusion Matrix Heatmap')
+    heatmap_path = result_dir / "metrics" / "confusion_matrix_heatmap.png"
+    plt.tight_layout()
+    plt.savefig(heatmap_path)
+    plt.close()
 
 
 def main(args):
@@ -209,7 +227,7 @@ def main(args):
     ###------------global-config------------###
 
     # load dataloader
-    dataset = load_dataset(Path(args.data_dir).parent.name, data_root_dir=args.data_dir)
+    dataset = load_dataset(Path(args.data_dir).parent.name, data_root_dir=args.data_dir, cfg=cfg)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
     dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
 
@@ -225,13 +243,7 @@ def main(args):
             src_img = src_img.permute(1, 2, 0).cpu().numpy()  # Convert to HWC format
             tgt_img = tgt_img.permute(1, 2, 0).cpu().numpy()
 
-            # TODO: for single-dof-task
-            if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
-                K = np.loadtxt("config/eval_view_shift/intrinsic-7-scene.txt", delimiter=",")
-
-            if Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
-                K = np.loadtxt(Path("data/scannet-v2/scans_test") / item["metadata"]["scene"] / "intrinsic" / "intrinsic_color.txt")
-                K = K[:3, :3]
+            K = get_intrinsic_matrix(args.data_dir, item=item)
 
             kp1, des1 = extract_keypoints_and_descriptors(sift, tgt_img)
             kp2, des2 = extract_keypoints_and_descriptors(sift, src_img)
@@ -280,7 +292,6 @@ def main(args):
 
             continue
     
-    # TODO
     save_metrics(structure_result, args.result_dir)
 
     logger.info("Processing completed.")

@@ -14,19 +14,16 @@ model=sift
 for dataset in 7-scenes scannet; do
     for task_split in translation rotation; do
         for min_angle in 15 30 45 60; do
-                echo "Running experiment with dataset=${dataset}, model=${model}, and min_angle=${min_angle}, task=${task_split}"
+            data_dir=~/benchmark/obj-centered-view-shift-${dataset}/min-angle-${min_angle}-deg
+            result_dir=result/final-table-cv-methods/obj-centered-cls/${dataset}/min-angle-${min_angle}-deg/${model}/${task_split}
 
-                data_dir=~/benchmark/obj-centered-view-shift-${dataset}/min-angle-${min_angle}-deg
-                result_dir=result/final-table-cv-methods/obj-centered-cls//${dataset}/min-angle-${min_angle}-deg/${model}/${task_split}
-
-                python eval-obj-centered-cls/sift-cls.py \
-                    --yaml_file config/eval/sift.yaml \
-                    --data_dir "$data_dir" \
-                    --result_dir "$result_dir" \
-                    --min_angle "$min_angle" \
-                    --dataset "$dataset" \
-                    --split "$task_split" &
-
+            python eval-obj-centered-cls/sift-cls.py \
+                --yaml_file config/eval/sift.yaml \
+                --data_dir "$data_dir" \
+                --result_dir "$result_dir" \
+                --min_angle "$min_angle" \
+                --dataset "$dataset" \
+                --split "$task_split" &
         done
     done
 done

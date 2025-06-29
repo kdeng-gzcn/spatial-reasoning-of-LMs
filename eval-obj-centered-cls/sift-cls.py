@@ -1,7 +1,6 @@
 import cv2
 import json
 import jsonlines
-import yaml
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -162,6 +161,22 @@ def pose2prediction(Rmat: np.ndarray, t: np.ndarray) -> dict:
     return pred
 
 
+def get_intrinsic_matrix(data_dir: str, **kwargs) -> np.ndarray:
+    """
+    Get the intrinsic matrix based on the benchmark name.
+    """
+    benchmark_name = _get_benchmark_name(data_dir)
+    if benchmark_name == "obj-centered-view-shift-7-scenes":
+        return np.loadtxt("/home/u5u/kdeng.u5u/spatial-reasoning-of-LMs/config/eval/intrinsic-7-scenes.txt", delimiter=",")
+    
+    elif benchmark_name == "obj-centered-view-shift-scannet":
+        item = kwargs.get("item") # item["metadata"]["scene"]
+        return np.loadtxt(Path("/home/u5u/kdeng.u5u/data/scannet-v2/scans_test") / item["metadata"]["scene"] / "intrinsic" / "intrinsic_color.txt")[:3, :3]
+    
+    else:
+        raise ValueError(f"Unknown benchmark name: {benchmark_name}")
+
+
 def save_metrics(results: list, result_dir: str) -> None:
     result_dir = Path(result_dir)
 
@@ -180,29 +195,6 @@ def save_metrics(results: list, result_dir: str) -> None:
 
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=4)
-
-    # # compute metrics and save results
-    # y_true = df["label"].values
-    # y_pred = df["pred"].values
-
-    # accuracy = accuracy_score(y_true, y_pred)
-    # precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
-    # recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
-    # f1 = f1_score(y_true, y_pred, average='weighted', zero_division=0)
-
-    # metrics = {
-    #     "accuracy": accuracy,
-    #     "precision": precision,
-    #     "recall": recall,
-    #     "f1_score": f1,
-    # }
-
-    # # save metrics to json
-    # metrics_dir = result_dir / "metrics"
-    # metrics_dir.mkdir(parents=True, exist_ok=True)
-
-    # with open(metrics_dir / "metrics.json", "w") as f:
-    #     json.dump(metrics, f, indent=4)
 
     # Save confusion matrix
     cm = confusion_matrix(df["label"], df["pred"])
@@ -257,12 +249,7 @@ def main(args):
             src_img = src_img.permute(1, 2, 0).cpu().numpy()  # Convert to HWC format
             tgt_img = tgt_img.permute(1, 2, 0).cpu().numpy()
 
-            if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
-                K = np.loadtxt("/home/u5u/kdeng.u5u/spatial-reasoning-of-LMs/config/eval/intrinsic-7-scenes.txt", delimiter=",")
-
-            if Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
-                K = np.loadtxt(Path("/home/u5u/kdeng.u5u/data/scannet-v2/scans_test") / item["metadata"]["scene"] / "intrinsic" / "intrinsic_color.txt") # TODO: dir 
-                K = K[:3, :3]
+            K = get_intrinsic_matrix(args.data_dir, item=item)
 
             kp1, des1 = extract_keypoints_and_descriptors(sift, tgt_img)
             kp2, des2 = extract_keypoints_and_descriptors(sift, src_img)
@@ -311,7 +298,6 @@ def main(args):
 
             continue
     
-    # TODO
     save_metrics(structure_result, args.result_dir)
 
     logger.info("Processing completed.")
