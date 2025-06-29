@@ -32,7 +32,7 @@ _C.STRATEGY.MULTI_AGENTS = CN()
 _C.STRATEGY.VLM_ONLY = CN()
 _C.STRATEGY.VLM_ONLY.PROMPT_TYPE = None
 
-_C.STRATEGY.IS_TRAP = False  # whether to add trap option
+_C.STRATEGY.IS_TRAP = True  # whether to add trap option
 _C.STRATEGY.IS_SHUFFLE = True  # whether to shuffle options
 
 # _C.STRATEGY.UTILS = CN()

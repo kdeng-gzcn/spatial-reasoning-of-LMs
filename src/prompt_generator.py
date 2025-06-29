@@ -386,11 +386,16 @@ class PromptGenerator:
         prompt_strategy_map = total_options_map[self.config.EXPERIMENT.TASK_NAME][self.config.EXPERIMENT.TASK_SPLIT]["prompt"]
         
         if self.config.EXPERIMENT.TASK_NAME == "single-dof-cls":
+            if self.config.STRATEGY.VLM_ONLY.PROMPT_TYPE in ["CoT-hint", "VoT-hint"]:
+                prompt = prompt_strategy_map["dataset-prior-hint"] # concat dataset prior hint first.
+                prompt += prompt_strategy_map[self.config.STRATEGY.VLM_ONLY.PROMPT_TYPE]
+                return prompt
             prompt = prompt_strategy_map[self.config.STRATEGY.VLM_ONLY.PROMPT_TYPE]
         elif self.config.EXPERIMENT.TASK_NAME == "obj-centered-cls":
             prompt = prompt_strategy_map["task"]
         else:
             raise ValueError(f"Invalid task name: {self.config.EXPERIMENT.TASK_NAME}")
+        
         return prompt
 
     ### Prompt for VLM-Only spatial reasoning ###

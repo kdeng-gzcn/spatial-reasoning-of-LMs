@@ -1,8 +1,8 @@
 .cache/
 archive/
 benchmark/
-benchmark-v2/
 data/
+log/
 notebook/
 result/
 tests/
@@ -14,4 +14,3 @@ __pycache__
 
 .env
 
-git_config.sh

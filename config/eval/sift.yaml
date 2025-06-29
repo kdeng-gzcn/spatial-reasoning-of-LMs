@@ -1,0 +1,10 @@
+MODEL:
+  CV_METHOD:
+    SIFT:
+      MIN_MATCH_COUNT: 5
+      LOWES_MATCH_RATIO: 0.7
+      nfeatures: 0
+      nOctaveLayers: 3
+      contrastThreshold: 0.04
+      edgeThreshold: 10
+      sigma: 1.6

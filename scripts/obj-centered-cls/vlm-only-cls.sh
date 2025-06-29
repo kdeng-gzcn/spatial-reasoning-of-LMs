@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --job-name=qwen
-#SBATCH --output=qwen.out
+#SBATCH --job-name=kdeng
+#SBATCH --output=log/c2-%j.out
 #SBATCH --gpus=1
-#SBATCH --time=5:00:00 
+#SBATCH --time=12:00:00
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate spatial_reasoning_env
@@ -13,9 +13,9 @@ huggingface-cli login --token "${HUGGINGFACE_TOKEN}"
 MAX_JOBS=3
 
 for dataset in 7-scenes scannet; do
-    for model_id in Qwen/Qwen2.5-VL-7B-Instruct; do
+    for model_id in gpt-4o Qwen/Qwen2.5-VL-7B-Instruct; do
         for min_angle in 15 30 45 60; do
-            for task_split in translation rotation; do
+            for task_split in translation; do
                 echo "Running experiment with dataset=${dataset}, model_id=${model_id}, and min_angle=${min_angle}"
 
                 if [[ "$model_id" == */* ]]; then
@@ -25,7 +25,7 @@ for dataset in 7-scenes scannet; do
                 fi
 
                 data_dir=~/benchmark/obj-centered-view-shift-${dataset}/min-angle-${min_angle}-deg
-                result_dir=result/final-table/obj-centered-cls/${task_split}/${dataset}/${dir_vlm}/min-angle-${min_angle}-deg
+                result_dir=result/final-table-with-trap-opt/obj-centered-cls/${task_split}/${dataset}/${dir_vlm}/min-angle-${min_angle}-deg
 
                 python eval-obj-centered-cls/vlm-only-cls.py \
                     --data_dir "$data_dir" \

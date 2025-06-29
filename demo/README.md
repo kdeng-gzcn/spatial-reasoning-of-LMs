@@ -1,6 +1,6 @@
 ## Demo Dataset
 
-### Single-DoF
+### Single-DoF (C_1)
 Total Length: 29
 | DoF | len. |
 |-----|------|
@@ -11,7 +11,7 @@ Total Length: 29
 | ty | 4 |
 | tz | 4 |
 
-### Obj-Centered
+### Obj-Centered (C_2)
 Total Length: 37
 | tau | len. |
 |-----|------|

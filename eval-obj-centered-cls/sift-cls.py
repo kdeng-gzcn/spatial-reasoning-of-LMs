@@ -83,7 +83,7 @@ def _merge_cfg(args):
     """
     cfg.set_new_allowed(True)  # allow new keys to be set
     # cfg.merge_from_other_cfg(CN(vars(args)))
-    cfg.merge_from_file(args.yaml_file) # TODO: merge with yaml file
+    cfg.merge_from_file(args.yaml_file)
     cfg.EXPERIMENT.DATA_DIR = args.data_dir
     benchmark_name = _get_benchmark_name(args.data_dir)
     cfg.EXPERIMENT.TASK_NAME = _parse_benchmark_name(benchmark_name)
@@ -127,13 +127,14 @@ def extract_keypoints_and_descriptors(sift, image: np.ndarray) -> Tuple[list, np
 def match_descriptors(cfg: dict, des1, des2) -> list:
     flann = cv2.FlannBasedMatcher(dict(algorithm=1, trees=5), dict(checks=50))
     matches = flann.knnMatch(des1, des2, k=2)
-    return [m for m, n in matches if m.distance < cfg["lowes_match_ratio"] * n.distance]
+    return [m for m, n in matches if m.distance < cfg.MODEL.CV_METHOD.SIFT.LOWES_MATCH_RATIO * n.distance]
 
 
 def estimate_pose(cfg: dict, kp1, kp2, matches, K) -> Tuple[np.ndarray, np.ndarray]:
-    if len(matches) < cfg["min_match_count"]:
+    if len(matches) < cfg.MODEL.CV_METHOD.SIFT.MIN_MATCH_COUNT:
         logging.warning("Not enough good matches.")
         return None, None
+    
     src_pts = np.float32([kp1[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
     dst_pts = np.float32([kp2[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
 
@@ -240,7 +241,7 @@ def main(args):
     ###------------global-config------------###
 
     # load dataloader
-    dataset = load_dataset(Path(args.data_dir).parent.name, data_root_dir=args.data_dir)
+    dataset = load_dataset(Path(args.data_dir).parent.name, data_root_dir=args.data_dir, cfg=cfg)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
     dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
 
@@ -257,10 +258,10 @@ def main(args):
             tgt_img = tgt_img.permute(1, 2, 0).cpu().numpy()
 
             if Path(args.data_dir).parent.name == "obj-centered-view-shift-7-scenes":
-                K = np.loadtxt("config/eval_view_shift/intrinsic-7-scene.txt", delimiter=",")
+                K = np.loadtxt("/home/u5u/kdeng.u5u/spatial-reasoning-of-LMs/config/eval/intrinsic-7-scenes.txt", delimiter=",")
 
             if Path(args.data_dir).parent.name == "obj-centered-view-shift-scannet":
-                K = np.loadtxt(Path("data/scannet-v2/scans_test") / item["metadata"]["scene"] / "intrinsic" / "intrinsic_color.txt")
+                K = np.loadtxt(Path("/home/u5u/kdeng.u5u/data/scannet-v2/scans_test") / item["metadata"]["scene"] / "intrinsic" / "intrinsic_color.txt") # TODO: dir 
                 K = K[:3, :3]
 
             kp1, des1 = extract_keypoints_and_descriptors(sift, tgt_img)
