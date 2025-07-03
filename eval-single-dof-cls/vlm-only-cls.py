@@ -72,6 +72,16 @@ def parse_args():
         required=True,
         help="Task name for the experiment, default is 'view-shift-cls'"
     )
+    parser.add_argument(
+        "--is_trap",
+        action='store_true',
+        help="Whether to add trap option in the prompt"
+    )
+    parser.add_argument(
+        "--is_shuffle",
+        action='store_true',
+        help="Whether to shuffle the options in the prompt"
+    )
     return parser.parse_args()
 
 
@@ -113,6 +123,8 @@ def _merge_cfg(args):
     cfg.EXPERIMENT.DATASET = args.dataset
     cfg.STRATEGY.VLM_ONLY.PROMPT_TYPE = args.prompt_type
     cfg.EXPERIMENT.TASK_SPLIT = args.split
+    cfg.STRATEGY.IS_TRAP = args.is_trap
+    cfg.STRATEGY.IS_SHUFFLE = args.is_shuffle
     return cfg
 
 

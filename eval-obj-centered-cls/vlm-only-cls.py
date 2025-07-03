@@ -1,10 +1,8 @@
 import json
-import jsonlines
 from tqdm import tqdm
 import re
 from pathlib import Path
 import numpy as np
-import pandas as pd
 import logging
 import argparse
 from typing import Tuple
@@ -20,7 +18,6 @@ from src.logging.logging_config import setup_logging
 # from config.eval_view_shift.vlm_view_shift_left_right_prompt_v2 import task_prompt, short_answer_dict, detailed_answer_dict
 
 ### load config
-from yacs.config import CfgNode as CN
 from config.default import cfg
 
 ### load modules
@@ -78,6 +75,16 @@ def parse_args():
         required=True,
         help="Task name for the experiment, default is 'view-shift-cls'"
     )
+    parser.add_argument(
+        "--is_trap",
+        action='store_true',
+        help="Whether to add trap option in the prompt"
+    )
+    parser.add_argument(
+        "--is_shuffle",
+        action='store_true',
+        help="Whether to shuffle the options in the prompt"
+    )
     return parser.parse_args()
 
 
@@ -96,6 +103,8 @@ def _merge_cfg(args):
     cfg.EXPERIMENT.DATASET = args.dataset
     cfg.EXPERIMENT.MIN_ANGLE = float(args.min_angle)
     cfg.EXPERIMENT.TASK_SPLIT = args.split
+    cfg.STRATEGY.IS_TRAP = args.is_trap
+    cfg.STRATEGY.IS_SHUFFLE = args.is_shuffle
     return cfg
 
 

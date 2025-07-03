@@ -16,7 +16,7 @@ _C.DATASET.UTILS.MAX_LEN_DATASET = 60 # maximum number of data points in the dat
 ### MODEL
 _C.MODEL = CN()
 _C.MODEL.VLM = CN()
-_C.MODEL.VLM.ID = "gpt-4o"  # default name for the VLM model
+_C.MODEL.VLM.ID = None  # default name for the VLM model
 
 _C.MODEL.LLM = CN()
 _C.MODEL.LLM.ID = None  # default name for the LLM model
@@ -32,15 +32,15 @@ _C.STRATEGY.MULTI_AGENTS = CN()
 _C.STRATEGY.VLM_ONLY = CN()
 _C.STRATEGY.VLM_ONLY.PROMPT_TYPE = None
 
-_C.STRATEGY.IS_TRAP = True  # whether to add trap option
-_C.STRATEGY.IS_SHUFFLE = True  # whether to shuffle options
+_C.STRATEGY.IS_TRAP = None  # whether to add trap option
+_C.STRATEGY.IS_SHUFFLE = None  # whether to shuffle options
 
 # _C.STRATEGY.UTILS = CN()
 
 ### OTHER
 _C.EXPERIMENT = CN()
 _C.EXPERIMENT.TASK_NAME = None
-_C.EXPERIMENT.TASK_SPLIT = None # ["translation", "rotation"]
+_C.EXPERIMENT.TASK_SPLIT = None
 _C.EXPERIMENT.DATA_DIR = None
 _C.EXPERIMENT.RESULT_DIR = None
 

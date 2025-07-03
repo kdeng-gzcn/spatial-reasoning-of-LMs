@@ -6,6 +6,7 @@ from src.models import (
     GPTInstruct,
     GPTVisionInstruct,
     LlavaNextInstruct,
+    AnthropicVisionInstruct,
 )
 
 def load_model(model_name):
@@ -23,6 +24,8 @@ def load_model(model_name):
         "gpt-4o-mini": GPTVisionInstruct(name=model_name),
         "gpt-4o": GPTVisionInstruct(name=model_name),
         "gpt-4-turbo": GPTVisionInstruct(name=model_name),
+        "claude-opus-4-20250514": AnthropicVisionInstruct(name=model_name), # TODO
+        "claude-sonnet-4-20250514": AnthropicVisionInstruct(name=model_name), # TODO
     }
 
     if model_name not in model_mapping:

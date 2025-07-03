@@ -23,6 +23,8 @@ from transformers import (
 
 from qwen_vl_utils import process_vision_info
 
+import anthropic
+
 class VLMTemplate:
     def __init__(self, name: str):
         self.logger = logging.getLogger(__name__)
@@ -637,15 +639,147 @@ class GPTVisionInstruct(VLMTemplate):
                 },
             )
 
-        completiion = self.client.chat.completions.create(
+        completion = self.client.chat.completions.create(
             model=self.model_name,
             messages=self.conversation,
             max_tokens=1024,
             temperature=0, # temp. fixed at 0
         )
-        self._collect_completions(completiion)
+        self._collect_completions(completion)
         # self._print_tokens_usage(completiion)
-        response = completiion.choices[0].message.content
+        response = completion.choices[0].message.content
+
+        self.conversation.append(
+            {
+                "role": "assistant", 
+                "content": response,
+            },
+        )
+        return response
+
+
+class AnthropicVisionInstruct(VLMTemplate):
+    def __init__(self, name):
+        super().__init__(name=name)
+        self.conversation = []
+        self.prompt_tokens = []
+        self.output_tokens = []
+        
+    def _load_weight(self) -> None:
+        self.client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+    def _clear_history(self) -> None:
+        self.conversation = []
+
+    def _calculate_input_tokens_cost(self, num_tokens: int) -> float:
+        cost_map = {
+            "claude-sonnet-4-20250514": 3, # 3$ per million tokens
+            "claude-opus-4-20250514": 15, # 15$ per million tokens
+        }
+        assert self.model_name in cost_map, self.logger.error(f"Model {self.model_name} not found in input cost map")
+        return cost_map[self.model_name] * num_tokens / 1e6
+    
+    def _calculate_output_tokens_cost(self, num_tokens: int) -> float:
+        cost_map = {
+            "claude-sonnet-4-20250514": 15, # 15$ per million tokens
+            "claude-opus-4-20250514": 75, # 75$ per million tokens
+        }
+        assert self.model_name in cost_map, self.logger.error(f"Model {self.model_name} not found in output cost map")
+        return cost_map[self.model_name] * num_tokens / 1e6
+
+    # def _print_tokens_usage(self, completiion: Any) -> None:
+    #     """not used"""
+    #     self.logger.info(f"🤡 Prompt Tokens Usage: {completiion.usage.prompt_tokens}")
+    #     self.logger.info(f"👾 Prompt Tokens Cost: {self._calculate_input_tokens_cost(completiion.usage.prompt_tokens)}")
+    #     self.logger.info(f"🤡 Completion Tokens Usage: {completiion.usage.completion_tokens}")
+    #     self.logger.info(f"🤡 Completion Reasoning Tokens Usage: {completiion.usage.completion_tokens_details.reasoning_tokens}")
+    #     self.logger.info(f"👾 Completion Tokens Cost: {self._calculate_output_tokens_cost(completiion.usage.completion_tokens)}")
+    #     self.logger.info(f"🤡 Total Tokens Usage: {completiion.usage.total_tokens}")
+
+    def _collect_tokens_count(self, response: str) -> None:
+        input_tokens = self.client.messages.count_tokens(
+            model=self.model_name,
+            messages=self.conversation
+        )
+        self.prompt_tokens.append(input_tokens.input_tokens)
+        output_tokens = self.client.messages.count_tokens(
+            model=self.model_name,
+            messages=[{
+                "role": "user",
+                "content": response
+            }],
+        )
+        self.output_tokens.append(output_tokens.input_tokens)
+
+    def print_total_tokens_usage(self) -> None:
+        self.logger.info(f"😚💦💬 Total Prompt Tokens Usage: {sum(self.prompt_tokens)}")
+        self.logger.info(f"💰 Total Prompt Tokens Cost: {self._calculate_input_tokens_cost(sum(self.prompt_tokens)):.3f}$")
+        self.logger.info(f"🤖💬 Total Completion Tokens Usage: {sum(self.output_tokens)}")
+        self.logger.info(f"💰 Total Completion Tokens Cost: {self._calculate_output_tokens_cost(sum(self.output_tokens)):.3f}$")
+        self.logger.critical(f"🤡🤡🤡 Total Cost: {self._calculate_input_tokens_cost(sum(self.prompt_tokens)) + self._calculate_output_tokens_cost(sum(self.output_tokens)):.3f}$")
+        
+    def pipeline(self, images: Tuple[Any, Any], prompt: str) -> str:
+        images = [self.Tensor2PIL(image) for image in images]
+        # Convert images to base64
+        base64_images = []
+        for image in images:
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG")
+            base64_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
+            base64_images.append(base64_image)
+
+        if len(self.conversation) == 0: # first time
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Image 1:"
+                        },
+                        {
+                            "type": "image", 
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/png",
+                                "data": base64_images[0],
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": "Image 2:"
+                        },
+                        {
+                            "type": "image", 
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/png",
+                                "data": base64_images[1],
+                            },
+                        },
+                        {
+                            "type": "text", 
+                            "text": prompt
+                        },
+                    ],
+                },
+            )
+        else: # not first time
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": prompt,
+                },
+            )
+
+        message = self.client.messages.create(
+            model=self.model_name,
+            messages=self.conversation,
+            max_tokens=1024,
+            temperature=0,
+        )
+        response = message.content[0].text
+        self._collect_tokens_count(response)
 
         self.conversation.append(
             {
