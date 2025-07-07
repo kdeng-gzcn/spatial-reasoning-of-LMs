@@ -7,6 +7,7 @@ from src.models import (
     GPTVisionInstruct,
     LlavaNextInstruct,
     AnthropicVisionInstruct,
+    Llama4Instruct,
 )
 
 def load_model(model_name):
@@ -21,11 +22,14 @@ def load_model(model_name):
 
         "microsoft/Phi-3.5-vision-instruct": PhiVisionInstruct(name=model_name),
         "Qwen/Qwen2.5-VL-7B-Instruct": QwenVisionInstruct(name=model_name),
+        "Qwen/Qwen2.5-VL-32B-Instruct": QwenVisionInstruct(name=model_name), # TODO: 32B
+        "Qwen/Qwen2.5-VL-72B-Instruct": QwenVisionInstruct(name=model_name), # TODO: 72B
+        "meta-llama/Llama-4-Scout-17B-16E-Instruct": Llama4Instruct(name=model_name), # TODO: 109B
         "gpt-4o-mini": GPTVisionInstruct(name=model_name),
         "gpt-4o": GPTVisionInstruct(name=model_name),
         "gpt-4-turbo": GPTVisionInstruct(name=model_name),
-        "claude-opus-4-20250514": AnthropicVisionInstruct(name=model_name), # TODO
-        "claude-sonnet-4-20250514": AnthropicVisionInstruct(name=model_name), # TODO
+        "claude-opus-4-20250514": AnthropicVisionInstruct(name=model_name), # TODO: cannot use with multi-images
+        "claude-sonnet-4-20250514": AnthropicVisionInstruct(name=model_name),
     }
 
     if model_name not in model_mapping:

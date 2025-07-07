@@ -45,12 +45,13 @@ def _get_benchmark_name(data_dir: str) -> str:
     else:
         raise ValueError(f"Invalid data directory: {data_dir}")
 
+
 def _load_dataloader(data_dir: str, cfg: Any):
     """
     Load the dataset and create a DataLoader.
     """
     dataset = load_dataset(_get_benchmark_name(data_dir), data_root_dir=data_dir, cfg=cfg)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=lambda x: x)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=True, collate_fn=lambda x: x)
     dataloader_tqdm = tqdm(dataloader, desc="Processing", total=len(dataloader) if hasattr(dataloader, '__len__') else None)
     return dataloader_tqdm
 
@@ -59,7 +60,10 @@ data_dir = "/home/u5u/kdeng.u5u/benchmark/single-dof-camera-motion-scannet/theta
 dataloader = _load_dataloader(data_dir, cfg)
 
 # Load the model
-vlm_id = "Qwen/Qwen2.5-VL-7B-Instruct"
+# vlm_id = "Qwen/Qwen2.5-VL-7B-Instruct"
+vlm_id = "Qwen/Qwen2.5-VL-32B-Instruct"
+# vlm_id = "Qwen/Qwen2.5-VL-72B-Instruct"
+# vlm_id = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
 vlm = _load_model(vlm_id)
 
 # Load the prompt generator
@@ -77,7 +81,7 @@ images = (src_img, tgt_img)
 
 vlm._clear_history()  # clear the history of VLM for each pair of images
 
-prompt = "What do you see?"
+prompt = "What do you see? Can you describe in details of the two images? "
     
 vlm_answer = vlm.pipeline(images, prompt)
 

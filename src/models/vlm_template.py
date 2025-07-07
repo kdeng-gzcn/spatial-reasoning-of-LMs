@@ -10,6 +10,7 @@ from torch.amp import autocast
 from torchvision.transforms import ToPILImage
 
 from openai import OpenAI
+import anthropic
 
 # from llama_cpp import Llama
 # from llama_cpp.llama_chat_format import Llava15ChatHandler
@@ -19,11 +20,11 @@ from transformers import (
     LlavaNextProcessor, LlavaNextForConditionalGeneration,
     Idefics2Processor, Idefics2ForConditionalGeneration,
     Qwen2_5_VLForConditionalGeneration, # newest transformers
+    AutoModelForImageTextToText,
 )
 
 from qwen_vl_utils import process_vision_info
 
-import anthropic
 
 class VLMTemplate:
     def __init__(self, name: str):
@@ -466,6 +467,65 @@ class SpaceLLaVA(VLMTemplate):
 #         results = self.model.create_chat_completion(messages=messages)
 #         answer = results["choices"][0]["message"]["content"].strip()
 #         return answer
+
+class Llama4Instruct(VLMTemplate):
+    def __init__(self, name: str):
+        super().__init__(name=name)
+        self.conversation = []
+
+    def _load_weight(self):
+        self.processor = AutoProcessor.from_pretrained(self.model_name)
+        self.model = AutoModelForImageTextToText.from_pretrained(
+            self.model_name,
+            device_map="auto",
+            torch_dtype=torch.bfloat16, # 2 bytes
+        )
+
+    def _clear_history(self):
+        self.conversation = []
+
+    def pipeline(self, images: Tuple[Any, Any], prompt: str) -> str:
+        images = [self.Tensor2PIL(image) for image in images]
+        if len(self.conversation) == 0:
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": [
+                        {"type": "image", "image": images[0]},
+                        {"type": "image", "image": images[1]},
+                        {"type": "text", "text": prompt},
+                    ],
+                },
+            )
+        else:
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": prompt,
+                },
+            )
+
+        inputs = self.processor.apply_chat_template(
+            self.conversation,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+        ).to(self.model.device)
+
+        outputs = self.model.generate(
+            **inputs,
+            max_new_tokens=1024,
+        )
+
+        response = self.processor.batch_decode(outputs[:, inputs["input_ids"].shape[-1]:])[0]
+        self.conversation.append(
+            {
+                "role": "assistant", 
+                "content": response,
+            },
+        )
+        return response
     
 
 class QwenVisionInstruct(VLMTemplate):
