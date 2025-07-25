@@ -23,10 +23,11 @@ class ScanNetCameraMotionDataset(Dataset):
             for pair_dir in scene_dir.iterdir():
                 if not pair_dir.is_dir():
                     continue
-
-                if self.dataset_length_count >= self.cfg.DATASET.UTILS.MAX_LEN_DATASET:
-                    self.logger.warning(f"Dataset length count exceeded {self.cfg.DATASET.UTILS.MAX_LEN_DATASET} for dir {self.data_root_dir}.")
-                    return
+                
+                if self.cfg: 
+                    if self.dataset_length_count >= self.cfg.DATASET.UTILS.MAX_LEN_DATASET:
+                        self.logger.warning(f"Dataset length count exceeded {self.cfg.DATASET.UTILS.MAX_LEN_DATASET} for dir {self.data_root_dir}.")
+                        return
 
                 self.list_of_pair_path.append(pair_dir)
                 self.dataset_length_count += 1
@@ -82,10 +83,11 @@ class ScanNetViewShiftDataset(Dataset):
             for pair_dir in scene_dir.iterdir():
                 if not pair_dir.is_dir():
                     continue
-
-                if self.dataset_length_count >= self.cfg.DATASET.UTILS.MAX_LEN_DATASET:
-                    self.logger.warning(f"Dataset length count exceeded 60 for dir {self.data_root_dir}.")
-                    return
+                
+                if self.cfg:
+                    if self.dataset_length_count >= self.cfg.DATASET.UTILS.MAX_LEN_DATASET:
+                        self.logger.warning(f"Dataset length count exceeded 60 for dir {self.data_root_dir}.")
+                        return
 
                 self.list_of_pair_path.append(pair_dir)
                 self.dataset_length_count += 1

@@ -97,19 +97,24 @@ class SpatialReasoningPipeline:
 
     def run_vlm_only(self, images: Tuple[torch.Tensor, torch.Tensor], vlm: Any, **kwargs):
         metadata = kwargs.get('metadata')
+        is_demo = kwargs.get('is_demo', False)  # whether to run in demo mode
         is_save_result = self.config.get('is_save_result', True) # TODO: key name
 
         # Generate prompt
         prompt, option_map = self.prompt_generator.spatial_reasoning_prompt(**kwargs)
         vlm_answer = vlm.pipeline(images, prompt)
 
-        if is_save_result:
-            self._chat_history_saver_for_vlm_only(vlm_answer=vlm_answer, metadata=metadata, prompt=prompt)
+        if is_demo:
+            print(f"⚠️⚠️Customed VLM pipeline output:<🤖>{vlm_answer}<🤖>")
+        
+        else:
+            if is_save_result:
+                self._chat_history_saver_for_vlm_only(vlm_answer=vlm_answer, metadata=metadata, prompt=prompt)
 
-        pred = self._answer_parser_for_vlm_only(vlm_answer, option_map=option_map)
+            pred = self._answer_parser_for_vlm_only(vlm_answer, option_map=option_map)
 
-        if is_save_result:
-            self._result_saver_for_vlm_only( metadata=metadata, pred=pred)
+            if is_save_result:
+                self._result_saver_for_vlm_only( metadata=metadata, pred=pred)
 
     ###---------------multi-agents----------------###
     def _chat_history_saver_for_multi_agents(self, **kwargs) -> None:

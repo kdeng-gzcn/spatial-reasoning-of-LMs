@@ -181,7 +181,7 @@ def main(args):
             )
         except Exception as e:
             logger.error(f"Debug: Error processing batch: {e}")
-            break # it should not have any error.
+            continue
 
     try:
         model.print_total_tokens_usage()

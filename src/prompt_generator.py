@@ -424,8 +424,8 @@ class PromptGenerator:
         Clearly explain your reasoning inside `<rsn></rsn>` tags, and then, provide your final decision inside `<ans></ans>` tags. 
 
         Response Format Example:
-        <rsn>My reason is...</rsn>
-        <ans>the number of option you choose here</ans>
+        <rsn>your reason here</rsn>
+        <ans>just output the index of your answer</ans>
         """.format(
             answer_candidates=answer_candidates,
         )

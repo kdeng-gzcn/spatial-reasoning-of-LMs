@@ -24,6 +24,8 @@ from config.default import cfg
 # set seed
 import random
 import torch
+
+
 def set_seed(seed: int):
     random.seed(seed)
     np.random.seed(seed)
@@ -228,11 +230,15 @@ def inference(dataloader_tqdm, vlm, pipe, **kwargs) -> None:
 
         vlm._clear_history()  # clear the history of VLM for each pair of images
         
-        pipe.run_vlm_only(
-            images=images,
-            metadata=metadata,
-            vlm=vlm,
-        )
+        try:
+            pipe.run_vlm_only(
+                images=images,
+                metadata=metadata,
+                vlm=vlm,
+            )
+        except Exception as e:
+            print(f"❌❌❌ Error in running current image pair datapoint! The error is \n{e}")
+            torch.cuda.empty_cache()
 
 
 def main(args):
