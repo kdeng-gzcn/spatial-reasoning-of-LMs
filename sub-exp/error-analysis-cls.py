@@ -40,7 +40,7 @@ set_seed(42)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="sub-exp-1")
+    parser = argparse.ArgumentParser(description="sub-exp-2")
     parser.add_argument(
         "--vlm_id",
         type=str,
@@ -58,6 +58,12 @@ def parse_args():
         type=str,
         required=True,
         help="Directory to save the results"
+    )
+    parser.add_argument(
+        "--prompt_mode", 
+        type=int,
+        required=True,
+        help="Prompt mode to use for the experiment. 0 for default, 1 for custom."
     )
     return parser.parse_args()
 
@@ -87,6 +93,79 @@ def _load_dataloader(data_dir: str):
     return dataloader_tqdm
 
 
+def _parse_answer(answer: str) -> dict:
+    try:
+        pat_rsn = r"<rsn>(.*?)(?:</rsn>|<ans>|$)"
+        match_rsn = re.search(pat_rsn, answer, re.DOTALL)
+        
+
+        pat_ans = r"<ans>\s*(\d+)\s*(?:</ans>|$)"
+        match_ans = re.search(pat_ans, answer)
+
+        if match_rsn and match_ans:
+            rsn = match_rsn.groups()[0]
+            ans = match_ans.groups()[0]
+            return {
+                "rsn": rsn,
+                "ans": ans,
+                "is_parse": True,
+            }
+        else:
+            rsn = match_rsn.groups()[0] if match_rsn else None
+            ans = match_ans.groups()[0] if match_ans else None
+            return {
+                "rsn": rsn,
+                "ans": ans,
+                "is_parse": False,
+            }
+    except Exception as e:
+        print(f"Error in parsing answer: {e}")
+
+
+def inference(dataloader_tqdm, vlm, result_dir, **kwargs) -> None:
+    """
+    Run inference on the dataloader using the VLM and pipeline.
+    """
+    mode = kwargs.get("mode")
+    func = transforms.ToTensor()
+    for data in dataloader_tqdm:
+        src_img = func(Image.open(data["src_img_path"]))
+        tgt_img = func(Image.open(data["tgt_img_path"]))
+
+        vlm._clear_history()
+        response = vlm.pipeline([src_img, tgt_img], data[f"prompt{mode}"])
+        output = _parse_answer(response)
+        if output["ans"]:
+            pred = int(output["ans"])
+        else:
+            print(f"❌❌ Warning: No answer found in response: {response[:20]}, using -1 as default.")
+            pred = -1
+        is_true = int(data["cor_idx"]) == pred
+
+        row = {}
+        row["src_img_path"] = data["src_img_path"]
+        row["tgt_img_path"] = data["tgt_img_path"]
+        row["dof"] = data["dof"]
+        row["sign"] = data["sign"]
+        try:
+            row["angle"] = data["angle"]
+        except KeyError:
+            print("Warning: 'angle' not found in data, skipping.")
+        row["label"] = data["label"]
+        row["cor_idx"] = data["cor_idx"]
+        row["vlm_id"] = vlm.model_name
+        row["prompt_mode"] = mode
+        row["prompt"] = data[f"prompt{mode}"]
+        row["answer"] = response
+        row["rsn"] = output["rsn"]
+        row["pred"] = pred
+        row["is_correct"] = is_true
+        row["is_parse"] = output["is_parse"]
+
+        with jsonlines.open(result_dir / "inference.jsonl", mode='a') as writer:
+            writer.write(row)
+
+
 def _print_cost(model):
     """
     Print the cost of the model.
@@ -114,79 +193,22 @@ def _save_general_metrics(df: pd.DataFrame, result_dir: Path):
     Save general metrics to the result directory.
     """
     metrics = {
-        "accuracy": accuracy_score(df["cor_idx_shuf"], df["pred"]),
-        "precision": precision_score(df["cor_idx_shuf"], df["pred"], average='weighted', zero_division=0),
-        "recall": recall_score(df["cor_idx_shuf"], df["pred"], average='weighted', zero_division=0),
-        "f1_score": f1_score(df["cor_idx_shuf"], df["pred"], average='weighted', zero_division=0),
+        "accuracy": accuracy_score(df["cor_idx"], df["pred"]),
+        "precision": precision_score(df["cor_idx"], df["pred"], average='weighted', zero_division=0),
+        "recall": recall_score(df["cor_idx"], df["pred"], average='weighted', zero_division=0),
+        "f1_score": f1_score(df["cor_idx"], df["pred"], average='weighted', zero_division=0),
         "total_num": int(df.shape[0]),
         "valid_num": int(df["is_parse"].sum()),
         "valid_ratio": float(df["is_parse"].sum() / len(df)),
-        "valid_acc": accuracy_score(df[df["is_parse"]]["cor_idx_shuf"], df[df["is_parse"]]["pred"]),
-        "f1_score": f1_score(df[df["is_parse"]]["cor_idx_shuf"], df[df["is_parse"]]["pred"], average='weighted', zero_division=0),
+        "valid_acc": accuracy_score(df[df["is_parse"]]["cor_idx"], df[df["is_parse"]]["pred"]),
+        "f1_score": f1_score(df[df["is_parse"]]["cor_idx"], df[df["is_parse"]]["pred"], average='weighted', zero_division=0),
     }
     
     metrics_path = result_dir / "metrics" / "metrics.json"
     metrics_path.parent.mkdir(parents=True, exist_ok=True)  # ensure the directory exists
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=4)
-
-
-# def _save_confusion_matrix(df: pd.DataFrame, result_dir: Path):
-#     """
-#     Save confusion matrix to the result directory.
-#     """
-#     cm = confusion_matrix(df["label"], df["pred"])
-#     labels = sorted(df["pred"].unique())
-#     cm_df = pd.DataFrame(cm, index=labels, columns=labels)
-    
-#     cm_csv_path = result_dir / "metrics" / "confusion_matrix.csv"
-#     cm_df.to_csv(cm_csv_path)
-
-#     # Plot and save heatmap
-#     plt.figure(figsize=(8, 6))
-#     sns.heatmap(cm_df, annot=True, fmt='d', cmap='Blues')
-#     plt.ylabel('True label')
-#     plt.xlabel('Predicted label')
-#     plt.title('Confusion Matrix Heatmap')
-#     heatmap_path = result_dir / "metrics" / "confusion_matrix_heatmap.png"
-#     plt.tight_layout()
-#     plt.savefig(heatmap_path)
-#     plt.close()
-
-
-def inference(dataloader_tqdm, vlm, result_dir, **kwargs) -> None:
-    """
-    Run inference on the dataloader using the VLM and pipeline.
-    """
-    func = transforms.ToTensor()
-    for data in dataloader_tqdm:
-        image = Image.open(data["img_path"])
-        image = func(image)
-        vlm._clear_history()
-        response = vlm.pipe_one_img(image, data["prompt_shuf"])
-        # find ans inside<ans></ans> tags from output
-        ans = re.search(r'<ans>.*?(\d+).*?(?:</ans>|$)', response, re.DOTALL)
-        if ans:
-            ans = ans.group(1)
-        try:
-            pred = int(ans)
-            is_parse = True
-        except:
-            pred = random.randint(0, len(data["cap"]) - 1) 
-            print(f"❌ Error in answering: 💬{response[:20]}💬, using random index {pred}.")
-            is_parse = False
-
-        is_true = int(data["cor_idx_shuf"]) == pred
-
-        data["vlm_id"] = vlm.model_name
-        data["resp"] = response
-        data["pred"] = pred
-        data["is_correct"] = is_true
-        data["is_parse"] = is_parse
-
-        with jsonlines.open(result_dir / "inference.jsonl", mode='a') as writer:
-            writer.write(data)
-
+        
 
 def main(args):
     # Set up logger
@@ -204,18 +226,21 @@ def main(args):
     vlm = _load_model(args.vlm_id)
 
     # Run the inference
-    logger.info("🚀🚀 Step1: Starting inference")
-    inference(dataloader_tqdm, vlm, result_dir)
+    logger.info("🚀🚀 Step1: Running inference with VLM %s", vlm.model_name)
+    inference(dataloader_tqdm, vlm, result_dir, mode=args.prompt_mode)
 
     # try to print cost
     _print_cost(vlm)
 
     ### Data Analysis Part
+    logger.info("🚀🚀 Step2: Starting data analysis")
     df = _load_inference_result(result_dir)
-    _save_general_metrics(df, result_dir)
+    quick_acc = df["is_correct"].mean()
+    logger.info("⚠️⚠️ Quick accuracy: %.2f%%", quick_acc * 100)
+    _save_general_metrics(df, result_dir) # TODO: maybe not useful
     # _save_confusion_matrix(df, result_dir)
 
-    logger.info("🚀🚀 Step2: Processing completed.")
+    logger.info("🚀🚀 Step3: Data analysis completed. Results saved.")
 
 if __name__ == "__main__":
     args = parse_args()

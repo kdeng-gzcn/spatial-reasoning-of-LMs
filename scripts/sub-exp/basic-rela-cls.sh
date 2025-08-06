@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=kdeng
 #SBATCH --output=log/basic-rela-%j.out
-#SBATCH --gpus=4
+#SBATCH --gpus=1
 #SBATCH --time=24:00:00
 
 source ~/miniconda3/etc/profile.d/conda.sh
@@ -13,7 +13,9 @@ set -a && source .env && set +a
 huggingface-cli login --token "${HUGGINGFACE_TOKEN}"
 
 # vlm_id="Qwen/Qwen2.5-VL-7B-Instruct"
-vlm_id="meta-llama/Llama-4-Scout-17B-16E-Instruct"
+# vlm_id="meta-llama/Llama-4-Scout-17B-16E-Instruct"
+# vlm_id="Salesforce/blip2-opt-2.7b"
+vlm_id="Salesforce/instructblip-vicuna-7b"
 # vlm_id="gpt-4o"
 if [[ "$vlm_id" == */* ]]; then
     dir_vlm="${vlm_id##*/}"

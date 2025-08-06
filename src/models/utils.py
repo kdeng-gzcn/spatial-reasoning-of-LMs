@@ -13,6 +13,8 @@ from src.models import (
     LlavaOneVisionInstruct,
     # Gemma3VisionInstruct,
     # DeepseekVisionInstruct,
+    BLIP,
+    BLIPVisionInstruct,
 )
 
 def load_model(model_name):
@@ -43,6 +45,10 @@ def load_model(model_name):
         "llava-hf/llama3-llava-next-8b-hf": LlavaNextVisionInstruct(name=model_name), # ✅
         "llava-hf/llava-onevision-qwen2-7b-ov-hf": LlavaOneVisionInstruct(name=model_name), # ✅
         "llava-hf/llava-onevision-qwen2-7b-ov-chat-hf": LlavaOneVisionInstruct(name=model_name), # ❌
+
+        # TODO: BLIP
+        "Salesforce/blip2-opt-2.7b": BLIP(name=model_name),
+        "Salesforce/instructblip-vicuna-7b": BLIPVisionInstruct(name=model_name),
     }
 
     if model_name not in model_mapping:

@@ -16,4 +16,6 @@ from .vlm_template import (
     LlavaOneVisionInstruct,
     # Gemma3VisionInstruct,
     # DeepseekVisionInstruct,
+    BLIP,
+    BLIPVisionInstruct,
 )

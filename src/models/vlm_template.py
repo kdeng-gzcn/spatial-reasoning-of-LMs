@@ -19,6 +19,8 @@ from transformers import (
     AutoModelForImageTextToText,
     # Gemma3ForConditionalGeneration,
     AutoModelForVision2Seq,
+    Blip2Processor, Blip2ForConditionalGeneration,
+    InstructBlipProcessor, InstructBlipForConditionalGeneration,
 )
 
 from qwen_vl_utils import process_vision_info
@@ -39,6 +41,127 @@ class VLMTemplate:
     
     def pipeline(self, image: Tuple[Any, Any], prompt: str) -> str:
         raise NotImplementedError
+
+## Old VLM
+class BLIP(VLMTemplate):
+    def __init__(self, name: str) -> None:
+        super().__init__(name=name)
+        self.conversation = []
+
+    def _load_weight(self):
+        self.processor = Blip2Processor.from_pretrained(self.model_name)
+        self.model = Blip2ForConditionalGeneration.from_pretrained(
+            self.model_name,
+            device_map="auto",
+        )
+
+    def _clear_history(self):
+        self.conversation = []
+    
+    def pipe_one_img(self, image: torch.Tensor, prompt: str) -> str:
+        image = self.Tensor2PIL(image)
+        if len(self.conversation) == 0:
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": [
+                        {"type": "image", "image": image},
+                        {"type": "text", "text": prompt},
+                    ],
+                },
+            )
+        else:
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": prompt,
+                },
+            )
+
+        inputs = self.processor(image, prompt, return_tensors="pt").to(self.model.device)
+
+        generated_ids = self.model.generate(
+            **inputs, 
+        )
+
+        output_text = self.processor.decode(
+            generated_ids[0], 
+            skip_special_tokens=True,
+        )
+        response = output_text.strip()
+
+        self.conversation.append(
+            {
+                "role": "assistant", 
+                "content": response,
+            },
+        )
+        return response
+        
+
+class BLIPVisionInstruct(VLMTemplate):
+    def __init__(self, name: str):
+        super().__init__(name=name)
+        self.conversation = []
+
+    def _load_weight(self) -> None:
+        self.processor = InstructBlipProcessor.from_pretrained(self.model_name)
+        self.model = InstructBlipForConditionalGeneration.from_pretrained(
+            self.model_name, 
+            device_map="auto",
+        )
+
+    def _clear_history(self) -> None:
+        self.conversation = []
+    
+    def pipe_one_img(self, image: torch.Tensor, prompt: str) -> str:
+        image = self.Tensor2PIL(image)
+        if len(self.conversation) == 0:
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": [
+                        {"type": "image", "image": image},
+                        {"type": "text", "text": prompt},
+                    ],
+                },
+            )
+        else:
+            self.conversation.append(
+                {
+                    "role": "user", 
+                    "content": prompt,
+                },
+            )
+
+        inputs = self.processor(image, prompt, return_tensors="pt").to(self.model.device)
+
+        generated_ids = self.model.generate(
+            **inputs, 
+            do_sample=False,
+            num_beams=5,
+            max_length=256,
+            min_length=1,
+            top_p=0.9,
+            repetition_penalty=1.5,
+            length_penalty=1.0,
+            temperature=1,
+        )
+
+        output_text = self.processor.batch_decode(
+            generated_ids, 
+            skip_special_tokens=True,
+        )
+        response = output_text[0].strip()
+        response = response[len(prompt):].strip()
+
+        self.conversation.append(
+            {
+                "role": "assistant", 
+                "content": response,
+            },
+        )
+        return response
 
 ## Open source models (multi image via conversation input)
 # TODO
@@ -689,8 +812,8 @@ class QwenVisionInstruct(VLMTemplate):
         self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             self.model_name, 
             # torch_dtype="auto",
-            # torch_dtype=torch.bfloat16, # 2 bytes
-            torch_dtype="auto", 
+            torch_dtype=torch.bfloat16, # 2 bytes
+            # torch_dtype="auto", 
             device_map="auto",
         )
 

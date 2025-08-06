@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=kdeng
-#SBATCH --output=log/c1-qwen-72B-wo-trap-%j.out
-#SBATCH --gpus=2
+#SBATCH --output=log/spaceqwen-c1-wo-trap-%j.out
+#SBATCH --gpus=1
 #SBATCH --time=24:00:00  
 
 source ~/miniconda3/etc/profile.d/conda.sh
@@ -10,12 +10,12 @@ conda activate spatial_reasoning_env
 set -a && source .env && set +a
 huggingface-cli login --token "${HUGGINGFACE_TOKEN}"
 
-MAX_JOBS=1
+MAX_JOBS=2
 
-for dataset in scannet; do
-    for vlm_id in Qwen/Qwen2.5-VL-72B-Instruct; do
-        for prompt_type in zero-shot; do
-            for split in phi; do
+for dataset in 7-scenes scannet scannetpp; do
+    for vlm_id in remyxai/SpaceQwen2.5-VL-3B-Instruct; do
+        for prompt_type in zero-shot dataset-prior-hint CoT-hint VoT-hint; do
+            for split in theta phi psi tx ty tz; do
                 if [[ "$vlm_id" == */* ]]; then
                     dir_vlm="${vlm_id##*/}"
                 else
