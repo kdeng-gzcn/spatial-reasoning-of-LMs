@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=kdeng
-#SBATCH --output=log/llavaonevision-c2-wo-trap-%j.out
+#SBATCH --output=log/llavaonevision-c2-w-trap-%j.out
 #SBATCH --gpus=1
 #SBATCH --time=24:00:00
 
@@ -23,7 +23,7 @@ for dataset in 7-scenes scannet; do
                 fi
 
                 data_dir=~/benchmark/obj-centered-view-shift-${dataset}/min-angle-${min_angle}-deg
-                result_dir=result/final-table-wo-trap/obj-centered-cls/${task_split}/${dataset}/${dir_vlm}/min-angle-${min_angle}-deg # remember the change the result dir
+                result_dir=result/final-table-w-trap/obj-centered-cls/${task_split}/${dataset}/${dir_vlm}/min-angle-${min_angle}-deg # remember the change the result dir
 
                 python eval-obj-centered-cls/vlm-only-cls.py \
                     --data_dir "$data_dir" \
@@ -32,6 +32,7 @@ for dataset in 7-scenes scannet; do
                     --min_angle "$min_angle" \
                     --model_id "$model_id" \
                     --is_shuffle \
+                    --is_trap \
                     --split "$task_split" &
 
                 while [ $(jobs -r | wc -l) -ge $MAX_JOBS ]; do

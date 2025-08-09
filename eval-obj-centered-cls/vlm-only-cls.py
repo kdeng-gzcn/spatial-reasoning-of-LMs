@@ -214,7 +214,14 @@ def main(args):
     # Compute confusion matrix and save as CSV
     cm = confusion_matrix(y_true, y_pred)
     labels = sorted(df["pred"].unique())
-    cm_df = pd.DataFrame(cm, index=labels, columns=labels)
+    try:
+        cm_df = pd.DataFrame(cm, index=labels, columns=labels)
+    except Exception as e:
+        logger.error(f"Error creating confusion matrix DataFrame: {e}")
+        if "no movement" not in labels:
+            labels.append("no movement")
+            cm_df = pd.DataFrame(cm, index=labels, columns=labels)
+
     cm_csv_path = result_dir / "metrics" / "confusion_matrix.csv"
     cm_df.to_csv(cm_csv_path)
 

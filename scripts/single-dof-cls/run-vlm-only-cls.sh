@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=kdeng
-#SBATCH --output=log/spaceqwen-c1-wo-trap-%j.out
+#SBATCH --output=log/idefics3-c1-w-trap-%j.out
 #SBATCH --gpus=1
 #SBATCH --time=24:00:00  
 
@@ -13,7 +13,7 @@ huggingface-cli login --token "${HUGGINGFACE_TOKEN}"
 MAX_JOBS=2
 
 for dataset in 7-scenes scannet scannetpp; do
-    for vlm_id in remyxai/SpaceQwen2.5-VL-3B-Instruct; do
+    for vlm_id in HuggingFaceM4/Idefics3-8B-Llama3; do
         for prompt_type in zero-shot dataset-prior-hint CoT-hint VoT-hint; do
             for split in theta phi psi tx ty tz; do
                 if [[ "$vlm_id" == */* ]]; then
@@ -23,7 +23,7 @@ for dataset in 7-scenes scannet scannetpp; do
                 fi
 
                 DATA_DIR=~/benchmark/single-dof-camera-motion-${dataset}/${split}_significant
-                RESULT_DIR=result/final-table-wo-trap/single-dof-cls/${dataset}/${dir_vlm}/${prompt_type}/${split} # remember the change the result dir
+                RESULT_DIR=result/final-table-w-trap/single-dof-cls/${dataset}/${dir_vlm}/${prompt_type}/${split} # remember the change the result dir
 
                 python eval-single-dof-cls/vlm-only-cls.py \
                     --data_dir ${DATA_DIR} \
@@ -32,6 +32,7 @@ for dataset in 7-scenes scannet scannetpp; do
                     --split ${split} \
                     --vlm_id ${vlm_id} \
                     --is_shuffle \
+                    --is_trap \
                     --prompt_type ${prompt_type} &
 
                 while [ $(jobs -r | wc -l) -ge $MAX_JOBS ]; do

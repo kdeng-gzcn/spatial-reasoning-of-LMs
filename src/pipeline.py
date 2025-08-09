@@ -114,7 +114,7 @@ class SpatialReasoningPipeline:
             pred = self._answer_parser_for_vlm_only(vlm_answer, option_map=option_map)
 
             if is_save_result:
-                self._result_saver_for_vlm_only( metadata=metadata, pred=pred)
+                self._result_saver_for_vlm_only(metadata=metadata, pred=pred)
 
     ###---------------multi-agents----------------###
     def _chat_history_saver_for_multi_agents(self, **kwargs) -> None:
