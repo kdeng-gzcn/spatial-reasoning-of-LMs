@@ -90,26 +90,25 @@ def _load_dataloader(data_dir: str):
 
 def _parse_answer(answer: str) -> dict:
     try:
-        pat_rsn = r"<obj>(.*?)(?:</obj>|<ans>|$)"
-        match_rsn = re.search(pat_rsn, answer, re.DOTALL)
-        
+        pat_obj = r"<obj>(.*?)(?:</obj>|<ans>|$)"
+        match_obj = re.search(pat_obj, answer, re.DOTALL)
 
-        pat_ans = r"<ans>\s*(\d+)\s*(?:</ans>|$)"
+        pat_ans = r"<ans>(.*?)(?:</ans>|$)"
         match_ans = re.search(pat_ans, answer)
 
-        if match_rsn and match_ans:
-            rsn = match_rsn.groups()[0]
+        if match_obj and match_ans:
+            obj = match_obj.groups()[0]
             ans = match_ans.groups()[0]
             return {
-                "rsn": rsn,
+                "obj": obj,
                 "ans": ans,
                 "is_parse": True,
             }
         else:
-            rsn = match_rsn.groups()[0] if match_rsn else None
+            obj = match_obj.groups()[0] if match_obj else None
             ans = match_ans.groups()[0] if match_ans else None
             return {
-                "rsn": rsn,
+                "obj": obj,
                 "ans": ans,
                 "is_parse": False,
             }

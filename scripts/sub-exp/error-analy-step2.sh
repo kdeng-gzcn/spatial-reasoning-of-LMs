@@ -5,15 +5,15 @@
 #SBATCH --gpus=1
 #SBATCH --time=24:00:00
 
-source ~/miniconda3/etc/profile.d/conda.sh
+source ~/miniforge3/etc/profile.d/conda.sh
 conda activate spatial_reasoning_env
 # conda activate phi
 
 set -a && source .env && set +a
 huggingface-cli login --token "${HUGGINGFACE_TOKEN}"
 
-# vlm_id="HuggingFaceM4/Idefics3-8B-Llama3"
-vlm_id="llava-hf/llava-onevision-qwen2-7b-ov-hf"
+vlm_id="HuggingFaceM4/Idefics3-8B-Llama3"
+# vlm_id="llava-hf/llava-onevision-qwen2-7b-ov-hf"
 # vlm_id="remyxai/SpaceQwen2.5-VL-3B-Instruct"
 # vlm_id="Qwen/Qwen2.5-VL-7B-Instruct"
 # vlm_id="Qwen/Qwen2.5-VL-72B-Instruct"

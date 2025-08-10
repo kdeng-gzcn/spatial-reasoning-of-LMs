@@ -168,6 +168,10 @@ def inference(dataloader_tqdm, vlm, result_dir, **kwargs) -> None:
         ans = re.search(r'<ans>.*?(\d+).*?(?:</ans>|$)', response, re.DOTALL)
         if ans:
             ans = ans.group(1)
+        else:
+            ans = re.search(r'(\d)', response)
+            if ans:
+                ans = ans.group(1)
         try:
             pred = int(ans)
             is_parse = True

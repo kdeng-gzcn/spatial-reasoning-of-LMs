@@ -256,7 +256,45 @@ class LlavaOneVisionInstruct(VLMTemplate):
 
     def _clear_history(self) -> None:
         self.conversation = []
-        
+
+    def pipe_one_img(self, image: torch.Tensor, prompt: str) -> str:
+        image = self.Tensor2PIL(image)
+        self.conversation.append(
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": image},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        )
+
+        text = self.processor.apply_chat_template(
+            self.conversation,
+            add_generation_prompt=True,
+        )
+
+        inputs = self.processor(
+            text=text,
+            images=[image],
+            padding=True,
+            return_tensors="pt"
+        ).to(self.model.device)
+
+        outputs = self.model.generate(
+            **inputs,
+            max_new_tokens=1024,
+        )
+
+        response = self.processor.batch_decode(outputs[:, inputs["input_ids"].shape[-1]:], skip_special_tokens=True)[0]
+        self.conversation.append(
+            {
+                "role": "assistant",
+                "content": response,
+            },
+        )
+        return response
+
     def pipeline(self, images: Tuple[Any, Any], prompt: str) -> str:
         images = [self.Tensor2PIL(image) for image in images]
         if len(self.conversation) == 0: # first time
@@ -371,6 +409,44 @@ class Idefics3VisionInstruct(VLMTemplate):
         self.conversation.append(
             {
                 "role": "assistant", 
+                "content": response,
+            },
+        )
+        return response
+
+    def pipe_one_img(self, image: torch.Tensor, prompt: str) -> str:
+        image = self.Tensor2PIL(image)
+        self.conversation.append(
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": image},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        )
+
+        text = self.processor.apply_chat_template(
+            self.conversation,
+            add_generation_prompt=True,
+        )
+
+        inputs = self.processor(
+            text=text,
+            images=[image],
+            padding=True,
+            return_tensors="pt"
+        ).to(self.model.device)
+
+        outputs = self.model.generate(
+            **inputs,
+            max_new_tokens=1024,
+        )
+
+        response = self.processor.batch_decode(outputs[:, inputs["input_ids"].shape[-1]:], skip_special_tokens=True)[0]
+        self.conversation.append(
+            {
+                "role": "assistant",
                 "content": response,
             },
         )
