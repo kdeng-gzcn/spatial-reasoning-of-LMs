@@ -1,0 +1,4 @@
+,backward,forward,no movement
+backward,4,1,1
+forward,10,3,0
+no movement,0,0,0

@@ -1,0 +1,4 @@
+,clockwise,counterclockwise,no movement
+clockwise,0,1,19
+counterclockwise,1,1,12
+no movement,0,0,0

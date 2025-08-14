@@ -3,8 +3,6 @@ archive/
 benchmark/
 data/
 log/
-notebook/
-result/
 tests/
 docs/
 ScanNet/
